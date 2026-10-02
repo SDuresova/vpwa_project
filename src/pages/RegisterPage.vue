@@ -4,36 +4,36 @@
       <q-form @submit="onSubmit" class="q-gutter-md">
         <q-input
             v-model="name"
-            label="Vaše používateľské meno"
+            label="Username"
             lazy-rules
             :rules="[ 
-                val => val && val.length > 0 || 'Zadaj používateľské meno',
+                val => val && val.length > 0 || 'Enter your username',
             ]"
         />
 
         <q-input
             v-model="email"
-            label="Váš email"
+            label="Email"
             lazy-rules
             :rules="[
-                val => val && val.length > 0 || 'Zadaj email',
+                val => val && val.length > 0 || 'Enter your email',
             ]"
         />
 
         <q-input
             v-model="password"
             type="password"
-            label="Heslo"
+            label="Password"
             lazy-rules
             :rules="[
-                val => !!val || 'Zadaj heslo',
-                val => val.length >= 8 || 'Heslo musí mať aspoň 8 znakov'
+                val => !!val || 'Password',
+                val => val.length >= 8 || 'Password needs to be atleast 8 characters long.'
             ]"
         />
 
         <div>
-            <q-btn label="Odoslať" type="submit" color="primary"/>
-            <router-link to="/prihlasenie" class="block q-mt-md">Máš už účet? Prihlás sa!</router-link>
+            <q-btn label="Submit" type="submit" color="primary"/>
+            <router-link to="/login" class="block q-mt-md">Have already an account? Log in!</router-link>
         </div>
   </q-form>
   </div>
@@ -50,6 +50,6 @@ const password = ref(null)
 
 const onSubmit = () => {
   // Form is validated successfully here
-  $q.notify({ color: 'green-4', message: 'Úspešne zaregistrovaný! Prihláste sa.', position: 'top' })
+  $q.notify({ color: 'green-4', message: 'Successfuly registered! Log in.', position: 'top' })
 }
 </script>
