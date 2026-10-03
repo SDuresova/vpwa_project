@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="lHr LpR lFr">
     <q-header elevated>
       <q-toolbar>
         <q-btn
@@ -15,6 +15,7 @@
       </q-toolbar>
     </q-header>
 
+    <!-- left panel with servers -->
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-primary text-white">
       <!--channels -->
       <q-list dark>
@@ -34,7 +35,7 @@
 
         <q-item-label header class="text-white row items-center justify-between">
             Channels
-          <q-btn flat round dense size="sm" icon="add" />
+          <q-btn flat round dense size="sm" icon="add" @click="createDialog = true" />
         </q-item-label>
 
         <q-item
@@ -85,9 +86,9 @@
         </q-item-section>
 
         <q-item-section>
-          <q-item-label class="text-weight-bold">Jozef Novák</q-item-label>
+          <q-item-label class="text-weight-bold">@jozko</q-item-label>
           <q-item-label caption class="text-white" style="opacity: 0.7">
-            @jozko · {{ status }}
+            {{ status }}
           </q-item-label>
         </q-item-section>
 
@@ -124,6 +125,41 @@
         </q-menu>
       </q-item>
     </q-drawer>
+    
+    <!-- right panel with memmbers -->
+    <q-drawer v-model="rightDrawerOpen" side="right" show-if-above bordered :width="240" class="bg-primary text-white">
+      <q-list>
+
+        <q-item-label header class="text-white">
+            Members
+        </q-item-label>
+
+        <q-item
+          v-for="m in channels.find(c => c.name === ($route.params.name || 'general')).members"
+          :key="m.nick"
+        >
+          <!-- Nick -->
+          <q-item-section>
+            <div class="row items-center no-wrap q-gutter-x-sm">
+              <q-avatar color="white" text-color="primary" size="38px">
+                {{m.nick.charAt(0).toUpperCase()}}
+                <q-badge
+                  floating
+                  rounded
+                  :color="statusColors[m.status]"
+                  class="status-dot"
+                />
+              </q-avatar>
+              <q-item-label :class="m.isAdmin ? 'text-weight-bold text-amber-9' : ''">
+                {{ m.nick }}
+                <q-icon v-if="m.isAdmin" name="star" color="amber-8" size="18px" class="q-ml-xs" />
+              </q-item-label>
+            </div>
+          </q-item-section>
+        </q-item>
+
+      </q-list>
+    </q-drawer>
 
     <q-page-container>
       <router-view />
@@ -148,31 +184,113 @@
         </q-input>
       </div>
     </q-footer>
+
+
+    <!-- popup to create server-->
+  <q-dialog v-model="createDialog">
+    <q-card style="width: 400px; max-width: 90vw">
+      <q-card-section>
+        <div class="text-h6">Create channel</div>
+      </q-card-section>
+
+      <q-card-section class="q-gutter-md">
+        <q-input outlined dense v-model="newChannelName" label="Channel name">
+          <template #prepend><q-icon name="tag" /></template>
+        </q-input>
+
+        <q-option-group
+          v-model="newChannelType"
+          inline
+          :options="[
+            { label: 'Public', value: 'public' },
+            { label: 'Private', value: 'private' }
+          ]"
+        />
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn flat label="Cancel" v-close-popup />
+        <q-btn unelevated color="primary" label="Create" v-close-popup @click="addServer" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
   </q-layout>
 </template>
 
 <script setup>
   import { ref } from 'vue'
 
-  const channels = [
-    { name: 'pozvanka-projekt', type: 'private', invited: true },
-    { name: 'general', type: 'public', unread: 3 },
-    { name: 'random', type: 'public', isAdmin: true },
-    { name: 'vpwa-tim', type: 'private', unread: 1 }
-  ]
-  
+  // opener for popup creating new server
+  const createDialog = ref(false)
+  // reactive var for channel naem
+  const newChannelName = ref('')
+  // same thign but type
+  const newChannelType = ref('public')
+  // status var
+  const status = ref('online')
+  // opener for hambuger
   const leftDrawerOpen = ref(false)
 
-  function toggleLeftDrawer() {
-    leftDrawerOpen.value = !leftDrawerOpen.value
-  }
-
-  const status = ref('online')
-
+  // status colors
   const statusColors = {
     online: 'positive',
     DND: 'negative',
     offline: 'grey-6'
+  }
+  // channel fake data 
+  const channels =ref([
+    { name: 'pozvanka-projekt', 
+      type: 'private', 
+      invited: true 
+    },
+    { name: 'general', 
+      type: 'public', 
+      unread: 3,
+      members: [
+        { nick: 'jozko', status: 'online', },
+        { nick: 'alice', status: 'online' },
+        { nick: 'bob', status: 'DND' },
+        { nick: 'cyprian', status: 'offline', isAdmin: true }
+      ] 
+    },
+    { name: 'random',
+      type: 'public', 
+      isAdmin: true,
+      members: [
+        { nick: 'jozko', status: 'online', },
+        { nick: 'david', status: 'online' },
+        { nick: 'fabio', status: 'DND' },
+        { nick: 'gusto', status: 'offline', isAdmin: true }
+      ]
+    },
+    { name: 'vpwa-tim', 
+      type: 'private', 
+      unread: 1,
+      members: [
+        { nick: 'jozko', status: 'online', isAdmin: true },
+        { nick: 'hogyvagy', status: 'online' },
+        { nick: 'ida', status: 'DND' },
+      ] 
+    }
+  ])
+
+  // opener for left hambugfeg
+  function toggleLeftDrawer() {
+    leftDrawerOpen.value = !leftDrawerOpen.value
+  }
+
+  // push data to our fake data
+  function addServer() {
+    channels.value.push({
+      name: newChannelName.value,
+      type: newChannelType.value,
+      isAdmin: true,
+      members: [{ nick: 'jozko', status: 'online', isAdmin: true }]
+    })
+
+    // reset variables
+    newChannelName.value = ''
+    newChannelType.value = 'public'    
   }
   
 </script>
