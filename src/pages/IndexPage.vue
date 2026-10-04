@@ -41,11 +41,11 @@
 import { ref } from 'vue'
 
 const messages = ref([
-  { author: 'ed', text: 'sprava1', time: '14:02' },
-  { author: 'jozko', text: 'sprav2', time: '14:05' },
-  { author: 'maria', text: 'sprav3', time: '14:06' },
-  { author: 'ed', text: 'sprava4', time: '14:10'},
-  { author: 'jozko', text: 'sprava5', time: '14:11' },
+  { author: 'ed', text: 'Message 1', time: '14:02' },
+  { author: 'jozko', text: 'Message 2', time: '14:05' },
+  { author: 'maria', text: 'Message 3', time: '14:06' },
+  { author: 'ed', text: 'Message 4', time: '14:10'},
+  { author: 'jozko', text: 'Message 5', time: '14:11' },
 ])
 
 const channelName = "#general"

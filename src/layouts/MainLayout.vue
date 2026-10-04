@@ -71,7 +71,7 @@
 
       <q-separator dark />
 
-      <!-- Profil + state -->
+      <!-- Profile and status -->
       <q-item clickable class="q-py-md">
         <q-item-section avatar>
           <q-avatar color="white" text-color="primary" size="38px">
@@ -239,7 +239,7 @@
   }
   // channel fake data 
   const channels =ref([
-    { name: 'pozvanka-projekt', 
+    { name: 'project-invitation',
       type: 'private', 
       invited: true 
     },
@@ -263,7 +263,7 @@
         { nick: 'gusto', status: 'offline', isAdmin: true }
       ]
     },
-    { name: 'vpwa-tim', 
+    { name: 'vpwa-team',
       type: 'private', 
       unread: 1,
       members: [

@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h2 class="text-h6 q-mb-md text-center">Log in;</h2>
-      <q-form @submit="onSubmit" @reset="onReset" class="q-gutter-md">
+    <h2 class="text-h6 q-mb-md text-center">Log in</h2>
+      <q-form @submit="onSubmit" class="q-gutter-md">
         <q-input
             v-model="name"
             label="Username"
@@ -40,9 +40,9 @@ const name = ref(null)
 const password = ref(null)
 
 const onSubmit = () => {
-  // Form is validated successfully here
+  // Prototype navigation only; credentials are not verified by a backend yet.
   $q.notify({ color: 'green-4', message: 'Successfuly logged in!', position: 'top' })
-  router.push('/')
+  router.push('/channels/general')
 
 }
 

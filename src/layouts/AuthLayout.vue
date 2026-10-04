@@ -17,7 +17,7 @@
           </q-card>
 
           <p class="text-center text-white q-mt-lg" style="opacity: 0.6; font-size: 12px">
-            &copy; 2026 VPWA projekt
+            &copy; 2026 VPWA project
           </p>
         </div>
       </q-page>

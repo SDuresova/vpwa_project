@@ -1,9 +1,11 @@
 const routes = [
+  // Open the login screen when visiting the app's base URL.
+  { path: '/', redirect: '/login' },
+
   {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('@/pages/IndexPage.vue') },
       { path: 'channels/:name', component: () => import('@/pages/IndexPage.vue') }
     ]
   },

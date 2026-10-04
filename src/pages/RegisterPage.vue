@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="text-h6 q-mb-md text-center">Registrácia</h2>
+    <h2 class="text-h6 q-mb-md text-center">Registration</h2>
       <q-form @submit="onSubmit" class="q-gutter-md">
         <q-input
             v-model="name"
@@ -42,14 +42,17 @@
 <script setup>
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const $q = useQuasar()
 const name = ref(null)
 const email = ref(null)
 const password = ref(null)
 
 const onSubmit = () => {
-  // Form is validated successfully here
+  // Prototype navigation only; no account is saved yet.
   $q.notify({ color: 'green-4', message: 'Successfuly registered! Log in.', position: 'top' })
+  router.push('/login')
 }
 </script>
