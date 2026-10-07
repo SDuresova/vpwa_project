@@ -140,6 +140,7 @@
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
+import { setProfile } from '@/state/profile'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -151,6 +152,12 @@ const password = ref('')
 const showPassword = ref(false)
 
 const onSubmit = () => {
+  setProfile({
+    firstName: firstName.value,
+    surname: surname.value,
+    nickname: nickname.value,
+    email: email.value
+  })
   // Prototype navigation only; no account is saved yet.
   $q.notify({
     color: 'info',

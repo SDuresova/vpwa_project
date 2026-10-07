@@ -74,6 +74,7 @@
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
+import { loginPreview } from '@/state/profile'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -82,6 +83,7 @@ const password = ref('')
 const showPassword = ref(false)
 
 const onSubmit = () => {
+  loginPreview(nickname.value)
   // Prototype navigation only; credentials are not verified by a backend yet.
   $q.notify({
     color: 'info',
