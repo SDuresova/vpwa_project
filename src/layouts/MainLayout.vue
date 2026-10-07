@@ -29,6 +29,95 @@
           @click="rightDrawerOpen = !rightDrawerOpen"
           ><q-tooltip>Members</q-tooltip></q-btn
         >
+        <q-btn
+          flat
+          round
+          icon="inbox"
+          :aria-label="
+            hasUnreadInvitations ? 'Inbox, unread invitation' : 'Inbox'
+          "
+          :aria-expanded="inboxOpen"
+          aria-haspopup="true"
+          aria-controls="notification-inbox"
+        >
+          <q-badge
+            v-if="hasUnreadInvitations"
+            rounded
+            floating
+            color="positive"
+            class="inbox-dot"
+            aria-hidden="true"
+          />
+          <q-tooltip>Inbox</q-tooltip>
+          <q-menu
+            v-model="inboxOpen"
+            dark
+            anchor="bottom right"
+            self="top right"
+            :offset="[0, 10]"
+            class="notification-inbox"
+            @show="markInvitationsRead"
+          >
+            <section id="notification-inbox" aria-label="Notifications">
+              <div class="inbox-heading">
+                <h2>Inbox</h2>
+                <span>{{ invitations.length }} pending</span>
+              </div>
+              <q-list v-if="invitations.length" class="q-pa-sm">
+                <q-item
+                  v-for="ch in invitations"
+                  :key="ch.name"
+                  class="inbox-invitation"
+                >
+                  <q-item-section avatar top>
+                    <q-avatar
+                      color="secondary"
+                      text-color="white"
+                      icon="mail_outline"
+                      size="36px"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-weight-bold"
+                      >Channel invitation</q-item-label
+                    >
+                    <q-item-label class="inbox-copy"
+                      >You've been invited to join <strong>{{ ch.name }}</strong
+                      >.</q-item-label
+                    >
+                    <q-item-label caption>{{
+                      ch.type === 'private'
+                        ? 'Private channel'
+                        : 'Public channel'
+                    }}</q-item-label>
+                    <div class="row q-gutter-sm q-mt-sm">
+                      <q-btn
+                        no-caps
+                        unelevated
+                        color="primary"
+                        label="Join"
+                        :aria-label="`Join ${ch.name}`"
+                        @click="acceptInvitation(ch)"
+                      />
+                      <q-btn
+                        no-caps
+                        flat
+                        label="Decline"
+                        :aria-label="`Decline ${ch.name}`"
+                        @click="declineInvitation(ch)"
+                      />
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+              <div v-else class="inbox-empty" role="status">
+                <q-icon name="done_all" size="32px" />
+                <p>You're all caught up.</p>
+                <span>New notifications will appear here.</span>
+              </div>
+            </section>
+          </q-menu>
+        </q-btn>
       </q-toolbar>
     </q-header>
 
@@ -52,45 +141,6 @@
           ></div
         >
         <nav class="channel-navigation" aria-label="Channels">
-          <q-btn
-            flat
-            no-caps
-            align="left"
-            :icon="invitationsOpen ? 'drafts' : 'mail_outline'"
-            label="Invitations"
-            class="invitations-toggle full-width"
-            :aria-expanded="invitationsOpen"
-            aria-controls="invitation-list"
-            @click="invitationsOpen = !invitationsOpen"
-          />
-          <q-slide-transition>
-            <div v-show="invitationsOpen" id="invitation-list">
-              <q-item
-                v-for="ch in invitations"
-                :key="ch.name"
-                class="channel-item channel-invitation-row"
-                style="border: 0; box-shadow: none"
-              >
-                <q-item-section avatar
-                  ><q-avatar
-                    size="32px"
-                    color="secondary"
-                    text-color="white"
-                    class="invitation-avatar"
-                    >{{ channelInitials(ch.name) }}</q-avatar
-                  ></q-item-section
-                ><q-item-section
-                  >{{ ch.name
-                  }}<q-item-label caption
-                    >New invitation</q-item-label
-                  ></q-item-section
-                >
-              </q-item>
-              <p v-if="!invitations.length" class="q-px-md q-py-sm"
-                >No invitations yet.</p
-              >
-            </div>
-          </q-slide-transition>
           <div class="section-heading"
             >CHANNELS<q-btn
               flat
@@ -374,7 +424,12 @@ const initials = computed(
     (profile.surname[0] || '').toUpperCase()
 )
 const channels = ref([
-  { name: 'project-invitation', type: 'private', invited: true },
+  {
+    name: 'project-invitation',
+    type: 'private',
+    invited: true,
+    invitationRead: false
+  },
   {
     name: 'general',
     type: 'public',
@@ -406,15 +461,25 @@ const activeChannel = computed(() =>
   channels.value.find(ch => ch.name === channelName.value)
 )
 const invitations = computed(() => channels.value.filter(ch => ch.invited))
-const invitationsOpen = ref(false)
-function channelInitials(name) {
-  return name
-    .split(/[\s_-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(word => word[0])
-    .join('')
-    .toUpperCase()
+const inboxOpen = ref(false)
+const hasUnreadInvitations = computed(() =>
+  invitations.value.some(channel => !channel.invitationRead)
+)
+function markInvitationsRead() {
+  // Reading an invitation does not accept it: it stays in the inbox until resolved.
+  invitations.value.forEach(channel => {
+    channel.invitationRead = true
+  })
+}
+function acceptInvitation(channel) {
+  channel.invited = false
+  channel.invitationRead = true
+  inboxOpen.value = false
+  router.push(`/channels/${channel.name}`)
+  closeMobileChannels()
+}
+function declineInvitation(channel) {
+  channels.value = channels.value.filter(item => item !== channel)
 }
 const joinedChannels = computed(() => channels.value.filter(ch => !ch.invited))
 const members = computed(() =>
@@ -536,25 +601,6 @@ function addChannel() {
     background: rgba($accent, 0.16);
     color: $text-link;
   }
-  .channel-invitation-row {
-    background: rgba($primary, 0.15);
-    border: none;
-    box-shadow: none;
-    .q-item__section--avatar {
-      min-width: 44px;
-    }
-  }
-  .invitation-avatar {
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .invitations-toggle {
-    min-height: 40px;
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 4px;
-    color: $text-body;
-  }
   .q-item__label--caption {
     color: $text-muted;
     font-size: 11px;
@@ -673,6 +719,65 @@ function addChannel() {
 @media (max-width: 420px) {
   .name-fields {
     grid-template-columns: 1fr;
+  }
+}
+// QMenu is rendered outside .chat-shell, so its styles live at the top level.
+.inbox-dot {
+  min-width: 8px;
+  min-height: 8px;
+  padding: 0;
+  top: 6px;
+  right: 6px;
+  border: 2px solid $dark;
+  box-sizing: content-box;
+}
+.notification-inbox {
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  background: $dark;
+  color: $text-body;
+  border: 1px solid rgba($text-muted, 0.18);
+  border-radius: 10px;
+
+  .inbox-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-bottom: 1px solid rgba($text-muted, 0.15);
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    span {
+      color: $text-muted;
+      font-size: 12px;
+    }
+  }
+  .inbox-invitation {
+    background: rgba($accent, 0.1);
+    border-radius: 6px;
+    padding: 16px 12px;
+  }
+  .inbox-copy {
+    line-height: 1.5 !important;
+    overflow-wrap: anywhere;
+  }
+  .q-item__label--caption {
+    color: $text-muted;
+  }
+  .inbox-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: $text-muted;
+    p {
+      color: $text-heading;
+      margin: 12px 0 4px;
+    }
+    span {
+      font-size: 12px;
+    }
   }
 }
 </style>
