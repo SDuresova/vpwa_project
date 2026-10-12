@@ -32,7 +32,9 @@
     "autoprefixer": "^10.4.27",
     "oxfmt": "^0.x",
     "oxlint": "^1.x",
-    "postcss": "^8.5.8"
+    "postcss": "^8.5.8",
+    "typescript": "^7.0.2",
+    "vue-tsc": "^3.3.13"
   },
   "engines": {
     "node": ">= 26 || ^24 || ^22.12"
