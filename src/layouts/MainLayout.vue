@@ -158,12 +158,18 @@
             :to="`/channels/${ch.name}`"
             active-class="channel-active"
             class="channel-item"
+            :class="{ 'channel-pinned': ch.pinned }"
             @click="closeMobileChannels"
           >
             <q-item-section avatar
               ><q-icon :name="ch.type === 'private' ? 'lock' : 'tag'"
             /></q-item-section>
             <q-item-section>{{ ch.name }}</q-item-section>
+            <q-item-section side v-if="ch.pinned">
+              <q-icon name="push_pin" size="16px" aria-label="Pinned channel">
+                <q-tooltip>Pinned channel</q-tooltip>
+              </q-icon>
+            </q-item-section>
             <q-item-section side v-if="ch.unread"
               ><q-badge rounded color="primary">{{
                 ch.unread
@@ -181,6 +187,15 @@
               >
                 <q-menu dark
                   ><q-list dense>
+                    <q-item
+                      clickable
+                      v-close-popup
+                      @click.prevent.stop="ch.pinned = !ch.pinned"
+                    >
+                      <q-item-section>{{
+                        ch.pinned ? 'Unpin channel' : 'Pin channel'
+                      }}</q-item-section>
+                    </q-item>
                     <q-item clickable v-close-popup @click="removeChannel(ch)"
                       ><q-item-section>Leave channel</q-item-section></q-item
                     >
@@ -402,6 +417,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { profile } from '@/state/profile'
+import { channels, isJoined, leaveChannel } from '@/state/channels'
 
 const route = useRoute()
 const router = useRouter()
@@ -423,39 +439,7 @@ const initials = computed(
     (profile.firstName[0] || profile.nickname[0] || '?').toUpperCase() +
     (profile.surname[0] || '').toUpperCase()
 )
-const channels = ref([
-  {
-    name: 'project-invitation',
-    type: 'private',
-    invited: true,
-    invitationRead: false
-  },
-  {
-    name: 'general',
-    type: 'public',
-    unread: 3,
-    members: [
-      { nick: 'alice', status: 'online' },
-      { nick: 'bob', status: 'DND' },
-      { nick: 'cyprian', status: 'offline', isAdmin: true }
-    ]
-  },
-  {
-    name: 'random',
-    type: 'public',
-    members: [
-      { nick: 'david', status: 'online' },
-      { nick: 'fabio', status: 'DND' }
-    ]
-  },
-  {
-    name: 'vpwa-team',
-    type: 'private',
-    unread: 1,
-    isAdmin: true,
-    members: [{ nick: 'ida', status: 'online' }]
-  }
-])
+
 const channelName = computed(() => route.params.name || 'general')
 const activeChannel = computed(() =>
   channels.value.find(ch => ch.name === channelName.value)
@@ -473,17 +457,24 @@ function markInvitationsRead() {
 }
 function acceptInvitation(channel) {
   channel.invited = false
+  channel.left = false
+  channel.pinned = true
   channel.invitationRead = true
   inboxOpen.value = false
   router.push(`/channels/${channel.name}`)
   closeMobileChannels()
 }
 function declineInvitation(channel) {
-  channels.value = channels.value.filter(item => item !== channel)
+  channel.invited = false
+  channel.left = true
 }
-const joinedChannels = computed(() => channels.value.filter(ch => !ch.invited))
+const joinedChannels = computed(() =>
+  channels.value
+    .filter(isJoined)
+    .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned))
+)
 const members = computed(() =>
-  activeChannel.value
+  isJoined(activeChannel.value)
     ? [
         {
           nick: profile.nickname,
@@ -506,7 +497,7 @@ function closeMobileChannels() {
   if ($q.screen.width <= 900) leftDrawerOpen.value = false
 }
 function removeChannel(channel) {
-  channels.value = channels.value.filter(ch => ch !== channel)
+  leaveChannel(channel)
   if (channelName.value === channel.name)
     router.push(`/channels/${joinedChannels.value[0]?.name || 'general'}`)
 }
@@ -600,6 +591,17 @@ function addChannel() {
   .channel-active {
     background: rgba($accent, 0.16);
     color: $text-link;
+  }
+  .channel-pinned {
+    background: rgba($accent, 0.12);
+    color: $text-link;
+    font-weight: 600;
+    .q-icon {
+      color: $text-link;
+    }
+    &.channel-active {
+      background: rgba($accent, 0.24);
+    }
   }
   .q-item__label--caption {
     color: $text-muted;
