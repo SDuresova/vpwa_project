@@ -170,10 +170,11 @@ function kick(channelId: number, userId: number) {
 
     const voters = kickVotes.value[key]     
 
-    if (voters.includes(myId())) {              // already voted
+    if (voters.includes(myId())) {              // already vote
         throw new Error('You have already voted to kick this user.')
     }
-  voters.push(myId())
+    
+    voters.push(myId())
 
   const votes = voters.length
   if (votes >= KICK_VOTES_TO_BAN) {

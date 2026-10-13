@@ -1,6 +1,6 @@
 import type { CommandDefinition, CommandName } from '../types/command'
 
-// Record<CommandName, …> → TS vyhodí chybu, ak niektorý príkaz chýba.
+
 export const commandDefinitions: Record<CommandName, CommandDefinition> = {
   join: {
     name: 'join',

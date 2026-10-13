@@ -7,12 +7,12 @@ function isCommandName(name: string): name is CommandName {
 }
 
 function parseCommand(input: string): ParsedCommand {
-  const [command = '', ...args] = input.trim().slice(1).split(/\s+/)
+    const [command = '', ...args] = input.trim().slice(1).split(/\s+/)
 
-  if (!isCommandName(command)) {
-    throw new Error('Invalid command! Use /help.')
-  }
+    if (!isCommandName(command)) {
+        throw new Error('Invalid command! Use /help.')
+    }
 
-  return { name: command, args }
+    return { name: command, args }
 }
 

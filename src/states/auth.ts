@@ -9,8 +9,6 @@ const isLoggedIn = ref(true)
 
 const { updateUser } = useUsers()
 
-const fullName = computed(() => `${profile.value.firstName} ${profile.value.lastName}`.trim())
-
 const initials = computed(() => {
   const { firstName, lastName, nickname } = profile.value
   const first = firstName[0] ?? nickname[0] ?? '?'
@@ -55,7 +53,6 @@ export function useAuth() {
   return {
     profile: readonly(profile),
     isLoggedIn: readonly(isLoggedIn),
-    fullName,
     initials,
     login,
     logout,
