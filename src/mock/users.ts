@@ -1,13 +1,14 @@
-import type { Profile } from '../types/profile'
-import { Member } from '@/types/member'
+import type { Profile } from '../types/profile.ts'
+import type { Member } from '../types/member.ts'
 
 // demo user
 export const mockProfile: Profile = {
-    id: 1,
-    firstName: 'jozko',
-    lastName: 'ferko',
-    nickname: 'jozofero',
-    status: 'online',
+  id: 1,
+  firstName: 'jozko',
+  email: '',
+  lastName: 'ferko',
+  nickname: 'jozko',
+  status: 'online'
 }
 
 // fake members

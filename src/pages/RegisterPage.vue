@@ -136,11 +136,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
-import { setProfile } from '@/state/profile'
+import { useAuth } from '@/states/auth'
+const { updateProfile } = useAuth()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -152,12 +153,20 @@ const password = ref('')
 const showPassword = ref(false)
 
 const onSubmit = () => {
-  setProfile({
-    firstName: firstName.value,
-    surname: surname.value,
-    nickname: nickname.value,
-    email: email.value
-  })
+  try {
+    updateProfile({
+      firstName: firstName.value,
+      lastName: surname.value,
+      nickname: nickname.value,
+      email: email.value
+    })
+  } catch (error) {
+    $q.notify({
+      color: 'negative',
+      message: error instanceof Error ? error.message : 'Registration failed.'
+    })
+    return
+  }
   // Prototype navigation only; no account is saved yet.
   $q.notify({
     color: 'info',

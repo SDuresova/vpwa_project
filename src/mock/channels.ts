@@ -1,4 +1,4 @@
-import type { Channel } from '../types/channel'
+import type { Channel } from '../types/channel.ts'
 
 export const mockChannels: Channel[] = [
   {

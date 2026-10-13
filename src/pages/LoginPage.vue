@@ -70,11 +70,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
-import { loginPreview } from '@/state/profile'
+import { useAuth } from '@/states/auth'
+const { login } = useAuth()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -83,7 +84,15 @@ const password = ref('')
 const showPassword = ref(false)
 
 const onSubmit = () => {
-  loginPreview(nickname.value)
+  try {
+    login(nickname.value)
+  } catch (error) {
+    $q.notify({
+      color: 'negative',
+      message: error instanceof Error ? error.message : 'Login failed.'
+    })
+    return
+  }
   // Prototype navigation only; credentials are not verified by a backend yet.
   $q.notify({
     color: 'info',
