@@ -1,9 +1,10 @@
-import { UserStatus } from "./member"
+import type { UserStatus } from './member.ts'
 
 export interface Profile {
-    id: number,
-    firstName: string,
-    lastName: string,
-    nickname: string,
-    status: UserStatus,
+  id: number
+  email: string
+  firstName: string
+  lastName: string
+  nickname: string
+  status: UserStatus
 }

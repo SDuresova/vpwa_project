@@ -1,11 +1,13 @@
-import type { CommandDefinition, CommandName } from '../types/command'
-
+import type { CommandDefinition, CommandName } from '../types/command.ts'
 
 export const commandDefinitions: Record<CommandName, CommandDefinition> = {
   join: {
     name: 'join',
     description: 'Join or create a channel',
-    args: [{ name: 'channelName' }, { name: 'private', optional: true, values: ['private'] }], // 2 arguments, 1 must have second is optional
+    args: [
+      { name: 'channelName' },
+      { name: 'private', optional: true, values: ['private'] }
+    ], // 2 arguments, 1 must have second is optional
     requiresJoined: false,
     adminOnly: false
   },

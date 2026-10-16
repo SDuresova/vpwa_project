@@ -104,7 +104,7 @@
                         flat
                         label="Decline"
                         :aria-label="`Decline ${ch.name}`"
-                        @click="declineInvitation(ch)"
+                        @click="declineInvitation(ch.id)"
                       />
                     </div>
                   </q-item-section>
@@ -170,9 +170,9 @@
                 <q-tooltip>Pinned channel</q-tooltip>
               </q-icon>
             </q-item-section>
-            <q-item-section side v-if="ch.unread"
+            <q-item-section side v-if="ch.unreadCount"
               ><q-badge rounded color="primary">{{
-                ch.unread
+                ch.unreadCount
               }}</q-badge></q-item-section
             >
             <q-item-section side>
@@ -190,7 +190,7 @@
                     <q-item
                       clickable
                       v-close-popup
-                      @click.prevent.stop="ch.pinned = !ch.pinned"
+                      @click.prevent.stop="togglePin(ch.id)"
                     >
                       <q-item-section>{{
                         ch.pinned ? 'Unpin channel' : 'Pin channel'
@@ -200,7 +200,7 @@
                       ><q-item-section>Leave channel</q-item-section></q-item
                     >
                     <q-item
-                      v-if="ch.isAdmin"
+                      v-if="isAdmin(ch.id)"
                       clickable
                       v-close-popup
                       @click="removeChannel(ch)"
@@ -230,7 +230,7 @@
             <span class="profile-summary"
               ><strong>{{ profile.nickname }}</strong
               ><span>{{
-                profile.status === 'DND' ? 'Do not disturb' : profile.status
+                profile.status === 'dnd' ? 'Do not disturb' : profile.status
               }}</span></span
             >
           </button>
@@ -248,7 +248,7 @@
             dense
             icon="logout"
             aria-label="Log out"
-            to="/login"
+            @click="logOut"
           />
         </div>
       </div>
@@ -272,11 +272,15 @@
           aria-label="Close members"
           @click="rightDrawerOpen = false"
       /></div>
-      <q-item v-for="member in members" :key="member.nick" class="member-row">
+      <q-item
+        v-for="member in members"
+        :key="member.nickname"
+        class="member-row"
+      >
         <q-item-section avatar
           ><span class="avatar-wrap"
             ><q-avatar size="34px" color="secondary" text-color="white">{{
-              member.nick[0].toUpperCase()
+              member.nickname[0].toUpperCase()
             }}</q-avatar
             ><span
               class="presence-dot"
@@ -284,7 +288,7 @@
         ></q-item-section>
         <q-item-section
           ><q-item-label
-            >{{ member.nick }}
+            >{{ member.nickname }}
             <q-icon
               v-if="member.isAdmin"
               name="star"
@@ -332,7 +336,7 @@
                 dark
                 outlined
                 dense
-                v-model.trim="draft.surname"
+                v-model.trim="draft.lastName"
                 label="Surname"
                 :rules="required"
             /></div>
@@ -358,7 +362,7 @@
               outlined
               dense
               v-model="draft.status"
-              :options="['online', 'DND', 'offline']"
+              :options="['online', 'dnd', 'offline']"
               label="Status"
             />
             <div class="row justify-end q-gutter-sm"
@@ -412,107 +416,132 @@
   </q-layout>
 </template>
 
-<script setup>
-import { computed, reactive, ref } from 'vue'
+<script setup lang="ts">
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { profile } from '@/state/profile'
-import { channels, isJoined, leaveChannel } from '@/state/channels'
+import { useAuth } from '@/states/auth'
+import { useChannels } from '@/states/channels'
+import type { Channel, ChannelPrivacyType } from '@/types/channel'
 
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
+const { profile, fullName, initials, updateProfile, logout } = useAuth()
+const {
+  channels,
+  joinedChannels,
+  invitations,
+  hasUnreadInvitations,
+  getByName,
+  isAdmin,
+  membersOf,
+  markInvitationsRead,
+  markRead,
+  togglePin,
+  create,
+  leave,
+  remove,
+  acceptInvitation: accept,
+  declineInvitation
+} = useChannels()
 const leftDrawerOpen = ref(false)
 const rightDrawerOpen = ref(false)
 const createDialog = ref(false)
 const profileDialog = ref(false)
-const newChannelName = ref('')
-const newChannelType = ref('public')
-const draft = reactive({})
-const required = [value => !!value?.trim() || 'This field is required']
-const statusColors = { online: '#23a55a', DND: '#f23f42', offline: '#b5c1ad' }
-const fullName = computed(() =>
-  `${profile.firstName} ${profile.surname}`.trim()
-)
-const initials = computed(
-  () =>
-    (profile.firstName[0] || profile.nickname[0] || '?').toUpperCase() +
-    (profile.surname[0] || '').toUpperCase()
-)
-
-const channelName = computed(() => route.params.name || 'general')
-const activeChannel = computed(() =>
-  channels.value.find(ch => ch.name === channelName.value)
-)
-const invitations = computed(() => channels.value.filter(ch => ch.invited))
 const inboxOpen = ref(false)
-const hasUnreadInvitations = computed(() =>
-  invitations.value.some(channel => !channel.invitationRead)
-)
-function markInvitationsRead() {
-  // Reading an invitation does not accept it: it stays in the inbox until resolved.
-  invitations.value.forEach(channel => {
-    channel.invitationRead = true
-  })
-}
-function acceptInvitation(channel) {
-  channel.invited = false
-  channel.left = false
-  channel.pinned = true
-  channel.invitationRead = true
-  inboxOpen.value = false
-  router.push(`/channels/${channel.name}`)
-  closeMobileChannels()
-}
-function declineInvitation(channel) {
-  channel.invited = false
-  channel.left = true
-}
-const joinedChannels = computed(() =>
-  channels.value
-    .filter(isJoined)
-    .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned))
-)
+const newChannelName = ref('')
+const newChannelType = ref<ChannelPrivacyType>('public')
+const draft = reactive({ ...profile.value })
+const required = [
+  (value: string) => !!value?.trim() || 'This field is required'
+]
+const statusColors = { online: '#23a55a', dnd: '#f23f42', offline: '#b5c1ad' }
+const channelName = computed(() => String(route.params.name || 'general'))
+const activeChannel = computed(() => getByName(channelName.value))
 const members = computed(() =>
-  isJoined(activeChannel.value)
-    ? [
-        {
-          nick: profile.nickname,
-          status: profile.status,
-          isAdmin: activeChannel.value.isAdmin
-        },
-        ...(activeChannel.value.members || [])
-      ]
+  activeChannel.value
+    ? membersOf(activeChannel.value.id).map(member => ({
+        ...member,
+        isAdmin: member.id === activeChannel.value?.adminId
+      }))
     : []
 )
+watch(
+  () => activeChannel.value?.id,
+  id => {
+    if (id !== undefined) markRead(id)
+  },
+  { immediate: true }
+)
+function errorNotice(error: unknown) {
+  $q.notify({
+    color: 'negative',
+    message: error instanceof Error ? error.message : 'Something went wrong.'
+  })
+}
+function acceptInvitation(channel: Pick<Channel, 'id' | 'name'>) {
+  try {
+    accept(channel.id)
+    inboxOpen.value = false
+    router.push('/channels/' + channel.name)
+    closeMobileChannels()
+  } catch (error) {
+    errorNotice(error)
+  }
+}
 function openProfile() {
-  Object.assign(draft, profile)
+  Object.assign(draft, profile.value)
   profileDialog.value = true
 }
 function saveProfile() {
-  Object.assign(profile, draft)
-  profileDialog.value = false
+  try {
+    const { id: _id, ...changes } = draft
+    updateProfile(changes)
+    profileDialog.value = false
+  } catch (error) {
+    errorNotice(error)
+  }
+}
+function logOut() {
+  logout()
+  router.push('/login')
 }
 function closeMobileChannels() {
   if ($q.screen.width <= 900) leftDrawerOpen.value = false
 }
-function removeChannel(channel) {
-  leaveChannel(channel)
-  if (channelName.value === channel.name)
-    router.push(`/channels/${joinedChannels.value[0]?.name || 'general'}`)
+function removeChannel(channel: Pick<Channel, 'id' | 'name'>) {
+  const finish = () => {
+    try {
+      if (isAdmin(channel.id)) remove(channel.id)
+      else leave(channel.id)
+      if (channelName.value === channel.name)
+        router.push('/channels/' + (joinedChannels.value[0]?.name || 'general'))
+    } catch (error) {
+      errorNotice(error)
+    }
+  }
+  if (isAdmin(channel.id))
+    $q.dialog({
+      title: 'Delete #' + channel.name + '?',
+      message:
+        'As administrator, leaving deletes this channel and its message history.',
+      cancel: true,
+      persistent: true
+    }).onOk(finish)
+  else finish()
 }
 function addChannel() {
-  channels.value.push({
-    name: newChannelName.value,
-    type: newChannelType.value,
-    isAdmin: true,
-    members: []
-  })
-  router.push(`/channels/${newChannelName.value}`)
-  newChannelName.value = ''
-  newChannelType.value = 'public'
-  createDialog.value = false
-  closeMobileChannels()
+  try {
+    create(newChannelName.value, newChannelType.value)
+    router.push('/channels/' + newChannelName.value)
+    newChannelName.value = ''
+    newChannelType.value = 'public'
+    createDialog.value = false
+    closeMobileChannels()
+  } catch (error) {
+    errorNotice(error)
+  }
 }
 </script>
 

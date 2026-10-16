@@ -19,7 +19,9 @@
     "lint:check": "oxfmt --check && oxlint",
     "dev": "quasar dev",
     "build": "quasar build",
-    "postinstall": "quasar prepare --silent"
+    "postinstall": "quasar prepare --silent",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test src/states/integration.test.ts"
   },
   "dependencies": {
     "@quasar/extras": "^2.1.0",
@@ -33,7 +35,7 @@
     "oxfmt": "^0.x",
     "oxlint": "^1.x",
     "postcss": "^8.5.8",
-    "typescript": "^7.0.2",
+    "typescript": "~5.9.3",
     "vue-tsc": "^3.3.13"
   },
   "engines": {

@@ -1,13 +1,17 @@
 import { computed, readonly, ref } from 'vue'
-import type { Profile } from '../types/profile'
-import type { UserStatus } from '../types/member'
-import { mockProfile } from '../mock/users'
-import { useUsers } from './users'
+import type { Profile } from '../types/profile.ts'
+import type { UserStatus } from '../types/member.ts'
+import { mockProfile } from '../mock/users.ts'
+import { useUsers } from './users.ts'
 
 const profile = ref<Profile>(structuredClone(mockProfile))
-const isLoggedIn = ref(true)
+const isLoggedIn = ref(false)
 
-const { updateUser } = useUsers()
+const { updateUser, getByNickname } = useUsers()
+
+const fullName = computed(() =>
+  `${profile.value.firstName} ${profile.value.lastName}`.trim()
+)
 
 const initials = computed(() => {
   const { firstName, lastName, nickname } = profile.value
@@ -16,7 +20,7 @@ const initials = computed(() => {
   return (first + last).toUpperCase()
 })
 
-// sync data 
+// sync data
 function syncDirectory() {
   updateUser(profile.value.id, {
     nickname: profile.value.nickname,
@@ -25,6 +29,7 @@ function syncDirectory() {
 }
 
 function login(nickname: string) {
+  validateNickname(nickname)
   if (nickname !== profile.value.nickname) {
     profile.value = { ...profile.value, firstName: '', lastName: '', nickname }
   }
@@ -39,7 +44,18 @@ function logout() {
   syncDirectory()
 }
 
+function validateNickname(nickname: string) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(nickname))
+    throw new Error(
+      'Use letters, numbers, underscores or hyphens for your nickname.'
+    )
+  const existing = getByNickname(nickname)
+  if (existing && existing.id !== profile.value.id)
+    throw new Error('This nickname is already taken.')
+}
+
 function updateProfile(changes: Partial<Omit<Profile, 'id'>>) {
+  if (changes.nickname !== undefined) validateNickname(changes.nickname)
   Object.assign(profile.value, changes)
   syncDirectory()
 }
@@ -53,6 +69,7 @@ export function useAuth() {
   return {
     profile: readonly(profile),
     isLoggedIn: readonly(isLoggedIn),
+    fullName,
     initials,
     login,
     logout,

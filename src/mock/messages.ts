@@ -1,4 +1,4 @@
-import type { Message } from '../types/message'
+import type { Message } from '../types/message.ts'
 
 export const mockMessages: Record<number, Message[]> = {
   1: [
@@ -22,7 +22,8 @@ export const mockMessages: Record<number, Message[]> = {
       id: 3,
       channelId: 1,
       authorId: 8,
-      content: 'A fresh space for ideas, questions and everything in between. @jozko',
+      content:
+        'A fresh space for ideas, questions and everything in between. @jozko',
       createdAt: '2026-10-12T12:06:00.000Z',
       mentionedUsers: [1]
     }

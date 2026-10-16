@@ -22,19 +22,29 @@
         v-for="message in currentMessages"
         :key="message.id"
         class="message-row"
+        :class="{
+          'message-mentioned': message.mentionedUsers.includes(profile.id)
+        }"
       >
         <q-avatar
           size="38px"
-          :color="message.own ? 'primary' : 'secondary'"
+          :color="message.authorId === profile.id ? 'primary' : 'secondary'"
           text-color="white"
           >{{ author(message)[0].toUpperCase() }}</q-avatar
         >
         <div class="message-content"
           ><div class="message-meta"
             ><strong>{{ author(message) }}</strong
-            ><time>{{ message.time }}</time
-            ><span v-if="message.own" class="you-label">you</span></div
-          ><p>{{ message.text }}</p></div
+            ><time>{{
+              new Date(message.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            }}</time
+            ><span v-if="message.authorId === profile.id" class="you-label"
+              >you</span
+            ></div
+          ><p>{{ message.content }}</p></div
         >
       </article>
     </div>
@@ -125,8 +135,8 @@
     <q-dialog v-model="membersOpen"
       ><q-card class="command-dialog q-pa-lg"
         ><h2>Members of #{{ channelName }}</h2
-        ><p v-for="member in channelMembers" :key="member.nick"
-          >@{{ member.nick }} · {{ member.status
+        ><p v-for="member in channelMembers" :key="member.nickname"
+          >@{{ member.nickname }} · {{ member.status
           }}{{ member.isAdmin ? ' · admin' : '' }}</p
         ><q-btn flat label="Close" v-close-popup /></q-card
     ></q-dialog>
@@ -134,7 +144,7 @@
       :model-value="!!pendingDelete"
       @update:model-value="
         value => {
-          if (!value) pendingDelete = null
+          if (!value) pendingDeleteId = null
         }
       "
       ><q-card class="command-dialog q-pa-lg"
@@ -142,7 +152,7 @@
         ><p
           >You are the administrator. This removes the channel and its local
           message history.</p
-        ><q-btn flat label="Cancel" @click="pendingDelete = null" /><q-btn
+        ><q-btn flat label="Cancel" @click="pendingDeleteId = null" /><q-btn
           color="negative"
           label="Delete channel"
           @click="confirmDelete" /></q-card
@@ -150,48 +160,65 @@
   </q-page>
 </template>
 
-<script setup>
-import { computed, reactive, ref, watch, nextTick } from 'vue'
+<script setup lang="ts">
+import { computed, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { profile } from '@/state/profile'
-import {
-  channels,
-  isJoined,
-  leaveChannel,
-  commandDefinitions,
-  executeCommand
-} from '@/state/channels'
+import { QInput } from 'quasar'
+import { useAuth } from '@/states/auth'
+import { useChannels } from '@/states/channels'
+import { useMessages } from '@/states/messages'
+import { useUsers } from '@/states/users'
+import { commandDefinitions as definitions } from '@/commands/definitions'
+import { argumentLabel } from '@/commands/parser'
+import { executeCommand } from '@/commands/execute'
+import type { Message } from '@/types/message'
+
+interface Suggestion {
+  name: string
+  args?: string
+  description: string
+  mention?: boolean
+}
+const { profile } = useAuth()
+const channels = useChannels()
+const messages = useMessages()
+const users = useUsers()
+const commandDefinitions = Object.values(definitions).map(command => ({
+  ...command,
+  args: argumentLabel(command)
+}))
 const route = useRoute()
 const router = useRouter()
-const channelName = computed(() => route.params.name || 'general')
+const channelName = computed(() => String(route.params.name || 'general'))
 const draft = ref('')
-const composerInput = ref(null)
+const composerInput = ref<QInput | null>(null)
 const selected = ref(0)
 const dismissed = ref(false)
 const feedback = ref('')
 const hasError = ref(false)
 const helpOpen = ref(false)
 const membersOpen = ref(false)
-const pendingDelete = ref(null)
-const activeChannel = computed(() =>
-  channels.value.find(channel => channel.name === channelName.value)
+const pendingDeleteId = ref<number | null>(null)
+const pendingDelete = computed(() =>
+  pendingDeleteId.value === null
+    ? undefined
+    : channels.getById(pendingDeleteId.value)
 )
-const canSend = computed(() => isJoined(activeChannel.value))
+const activeChannel = computed(() => channels.getByName(channelName.value))
+const canSend = computed(
+  () => !!activeChannel.value && channels.isJoined(activeChannel.value.id)
+)
 const activeCommand = computed(() =>
   commandDefinitions.find(command =>
-    draft.value.startsWith(`/${command.name} `)
+    draft.value.startsWith('/' + command.name + ' ')
   )
 )
 const channelMembers = computed(() =>
-  canSend.value
-    ? [
-        {
-          nick: profile.nickname,
-          status: profile.status,
-          isAdmin: activeChannel.value.isAdmin
-        },
-        ...(activeChannel.value.members || [])
-      ]
+  activeChannel.value
+    ? channels.membersOf(activeChannel.value.id).map(member => ({
+        ...member,
+        isAdmin: member.id === activeChannel.value?.adminId
+      }))
     : []
 )
 const mentionQuery = computed(() =>
@@ -199,21 +226,22 @@ const mentionQuery = computed(() =>
     ? null
     : (draft.value.match(/(?:^|\s)@([^\s@]*)$/)?.[1] ?? null)
 )
-const suggestions = computed(() =>
-  mentionQuery.value !== null
+const suggestions = computed<Suggestion[]>(() => {
+  const query = mentionQuery.value
+  return query !== null
     ? channelMembers.value
         .filter(member =>
-          member.nick.toLowerCase().startsWith(mentionQuery.value.toLowerCase())
+          member.nickname.toLowerCase().startsWith(query.toLowerCase())
         )
         .map(member => ({
-          name: member.nick,
+          name: member.nickname,
           description: member.status,
           mention: true
         }))
     : commandDefinitions.filter(command =>
         command.name.startsWith(draft.value.slice(1).toLowerCase())
       )
-)
+})
 const showSuggestions = computed(
   () =>
     !dismissed.value &&
@@ -224,13 +252,13 @@ watch(draft, () => {
   selected.value = 0
   dismissed.value = false
 })
-function selectCommand(command) {
+function selectCommand(command: Suggestion) {
   draft.value = command.mention
-    ? draft.value.replace(/@[^\s@]*$/, `@${command.name} `)
-    : `/${command.name} `
+    ? draft.value.replace(/@[^\s@]*$/, '@' + command.name + ' ')
+    : '/' + command.name + ' '
   composerInput.value?.focus()
 }
-function onKeydown(event) {
+function onKeydown(event: KeyboardEvent) {
   if (event.isComposing || !showSuggestions.value) return
   if (event.key === 'Escape') {
     event.preventDefault()
@@ -245,71 +273,43 @@ function onKeydown(event) {
       suggestions.value.length
     nextTick(() =>
       document
-        .getElementById(`command-${selected.value}`)
+        .getElementById('command-' + selected.value)
         ?.scrollIntoView({ block: 'nearest' })
     )
   }
   if (['Enter', 'Tab'].includes(event.key)) {
     event.preventDefault()
-    selectCommand(suggestions.value[selected.value])
+    const suggestion = suggestions.value[selected.value]
+    if (suggestion) selectCommand(suggestion)
   }
 }
-function confirmDelete() {
-  const channel = pendingDelete.value
-  if (!channel) return
-  leaveChannel(channel)
-  delete messages[channel.name]
-  pendingDelete.value = null
-  draft.value = ''
-  router.push(`/channels/${channels.value.find(isJoined)?.name || 'general'}`)
+function showError(error: unknown) {
+  hasError.value = true
+  feedback.value =
+    error instanceof Error ? error.message : 'Something went wrong.'
 }
-// Local sample messages only; these reset when the page is refreshed.
-const messages = reactive({
-  general: [
-    {
-      id: 1,
-      author: 'alice',
-      text: 'Hey everyone! Welcome to our little corner of the internet.',
-      time: '14:02'
-    },
-    { id: 2, own: true, text: 'Happy to be here! 🌿', time: '14:05' },
-    {
-      id: 3,
-      author: 'ed',
-      text: 'A fresh space for ideas, questions and everything in between.',
-      time: '14:06'
-    }
-  ],
-  random: [
-    {
-      id: 4,
-      author: 'david',
-      text: 'What is everyone working on today?',
-      time: '14:10'
-    }
-  ],
-  'vpwa-team': [
-    {
-      id: 5,
-      author: 'ida',
-      text: 'Let’s use this channel to plan our project.',
-      time: '14:12'
-    }
-  ]
-})
+async function navigateTo(id?: number) {
+  const channel =
+    id === undefined ? channels.joinedChannels.value[0] : channels.getById(id)
+  await router.push('/channels/' + (channel?.name || 'general'))
+}
+async function confirmDelete() {
+  if (pendingDeleteId.value === null) return
+  try {
+    channels.remove(pendingDeleteId.value)
+    pendingDeleteId.value = null
+    draft.value = ''
+    await navigateTo()
+  } catch (error) {
+    pendingDeleteId.value = null
+    showError(error)
+  }
+}
 const currentMessages = computed(() =>
-  canSend.value ? messages[channelName.value] || [] : []
+  activeChannel.value ? messages.forChannel(activeChannel.value.id) : []
 )
-watch(
-  () => channels.value.map(channel => channel.name),
-  names => {
-    for (const name of Object.keys(messages)) {
-      if (!names.includes(name)) delete messages[name]
-    }
-  },
-  { flush: 'sync' }
-)
-const author = message => (message.own ? profile.nickname : message.author)
+const author = (message: Pick<Message, 'authorId'>) =>
+  users.getById(message.authorId)?.nickname || 'Unknown user'
 watch(channelName, () => {
   draft.value = ''
   feedback.value = ''
@@ -319,50 +319,33 @@ async function sendMessage() {
   if (!draft.value.trim()) return
   hasError.value = false
   feedback.value = ''
-  if (draft.value.trim().startsWith('/')) {
-    try {
-      const result = executeCommand(
-        draft.value.trim(),
-        channelName.value,
-        profile.nickname
-      )
-      if (result.confirmDelete) {
-        pendingDelete.value = result.confirmDelete
+  try {
+    if (draft.value.trim().startsWith('/')) {
+      const input = draft.value.trim()
+      const result = executeCommand(input, {
+        channelId: activeChannel.value?.id ?? null
+      })
+      if (result.confirmDelete !== undefined) {
+        pendingDeleteId.value = result.confirmDelete
         return
       }
-      if (result.help) helpOpen.value = true
-      if (result.members) membersOpen.value = true
-      if (result.navigate) await router.push(`/channels/${result.navigate}`)
+      if (result.showHelp) helpOpen.value = true
+      if (result.showMembers) membersOpen.value = true
+      if (result.navigateTo !== undefined || input === '/cancel')
+        await navigateTo(result.navigateTo)
       feedback.value = result.message || ''
-      draft.value = ''
-    } catch (error) {
-      hasError.value = true
-      feedback.value = error.message
+    } else {
+      if (!activeChannel.value)
+        throw new Error('Join this channel before sending messages.')
+      messages.send(activeChannel.value.id, draft.value)
     }
-    return
+    draft.value = ''
+    await nextTick()
+    const history = document.querySelector('.message-history')
+    history?.scrollTo({ top: history.scrollHeight, behavior: 'smooth' })
+  } catch (error) {
+    showError(error)
   }
-  if (!canSend.value) {
-    hasError.value = true
-    feedback.value = 'Join this channel before sending messages.'
-    return
-  }
-  const channel = channelName.value
-  messages[channel] ||= []
-  messages[channel].push({
-    id: Date.now(),
-    own: true,
-    text: draft.value.trim(),
-    time: new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  })
-  draft.value = ''
-  await nextTick()
-  document.querySelector('.message-history')?.scrollTo({
-    top: document.querySelector('.message-history').scrollHeight,
-    behavior: 'smooth'
-  })
 }
 </script>
 
@@ -420,6 +403,10 @@ async function sendMessage() {
   &:hover {
     background: rgba($dark-page, 0.2);
   }
+}
+.message-mentioned {
+  background: rgba($accent, 0.14);
+  box-shadow: inset 3px 0 0 $accent;
 }
 .message-content {
   min-width: 0;

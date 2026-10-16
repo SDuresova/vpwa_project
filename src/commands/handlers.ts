@@ -1,14 +1,14 @@
-import type { CommandHandler, CommandName } from '@/types/command'
-import { useAuth } from '@/states/auth'
-import { useUsers } from '@/states/users'
-import { useChannels } from '@/states/channels'
+import type { CommandHandler, CommandName } from '../types/command.ts'
+import { useAuth } from '../states/auth.ts'
+import { useUsers } from '../states/users.ts'
+import { useChannels } from '../states/channels.ts'
 
 const { profile } = useAuth()
 const { getByNickname } = useUsers()
 const channels = useChannels()
 
 // help functions
-// search for user 
+// search for user
 function findTargetUser(nickname: string) {
   const name = nickname.replace(/^@/, '')
 
@@ -82,7 +82,11 @@ export const join: CommandHandler = args => {
   if (existing.bannedIds.includes(profile.value.id)) {
     throw new Error('You are banned from this channel.')
   }
-  if (existing.type === 'private' && !channels.isJoined(existing.id) && !existing.invited) {
+  if (
+    existing.type === 'private' &&
+    !channels.isJoined(existing.id) &&
+    !existing.invited
+  ) {
     throw new Error('You need an invitation to join this private channel.')
   }
 
@@ -98,10 +102,14 @@ export const invite: CommandHandler = (args, context) => {
   const isAdmin = channels.isAdmin(channel.id)
 
   if (channel.type === 'private' && !isAdmin) {
-    throw new Error('Only the administrator can invite users to a private channel.')
+    throw new Error(
+      'Only the administrator can invite users to a private channel.'
+    )
   }
   if (channel.bannedIds.includes(user.id) && !isAdmin) {
-    throw new Error('Only the administrator can restore access for a banned user.')
+    throw new Error(
+      'Only the administrator can restore access for a banned user.'
+    )
   }
   if (channel.memberIds.includes(user.id)) {
     throw new Error(`@${user.nickname} is already a member.`)
@@ -145,7 +153,6 @@ export const kick: CommandHandler = (args, context) => {
   }
   return { message: `Kick vote recorded for @${user.nickname} (${votes}/3).` }
 }
-
 
 export const handlers: Record<CommandName, CommandHandler> = {
   join,
