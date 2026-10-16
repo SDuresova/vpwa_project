@@ -5,6 +5,7 @@ import { mockChannels } from '../mock/channels.ts'
 import { useAuth } from './auth.ts'
 import { useUsers } from './users.ts'
 import { useMessages } from './messages.ts'
+import { useDrafts } from './drafts.ts'
 
 const channels = ref<Channel[]>(structuredClone(mockChannels))
 
@@ -140,7 +141,8 @@ function join(channelId: number) {
 }
 
 function remove(channelId: number) {
-  requireAdmin(channelId)
+  const channel = requireAdmin(channelId)
+  useDrafts().remove(channel.name)
   channels.value = channels.value.filter(c => c.id !== channelId)
   removeChannelMessages(channelId)
   for (const key of Object.keys(kickVotes.value)) {
@@ -151,6 +153,7 @@ function remove(channelId: number) {
 // Admin odchodom kanál zruší, ostatní z neho len odídu.
 function leave(channelId: number) {
   const channel = requireMember(channelId)
+  useDrafts().remove(channel.name)
   if (channel.adminId === myId()) {
     remove(channelId)
     return

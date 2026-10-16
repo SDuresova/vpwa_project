@@ -164,7 +164,16 @@
             <q-item-section avatar
               ><q-icon :name="ch.type === 'private' ? 'lock' : 'tag'"
             /></q-item-section>
-            <q-item-section>{{ ch.name }}</q-item-section>
+            <q-item-section>
+              <q-item-label>{{ ch.name }}</q-item-label>
+              <q-item-label
+                v-if="ch.name !== channelName && drafts.get(ch.name).trim()"
+                caption
+                class="channel-draft ellipsis"
+                :title="'Draft: ' + drafts.get(ch.name)"
+                ><span>Draft:</span> {{ drafts.get(ch.name) }}</q-item-label
+              >
+            </q-item-section>
             <q-item-section side v-if="ch.pinned">
               <q-icon name="push_pin" size="16px" aria-label="Pinned channel">
                 <q-tooltip>Pinned channel</q-tooltip>
@@ -422,9 +431,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuth } from '@/states/auth'
 import { useChannels } from '@/states/channels'
+import { useDrafts } from '@/states/drafts'
 import type { Channel, ChannelPrivacyType } from '@/types/channel'
 
 const route = useRoute()
+const drafts = useDrafts()
 const router = useRouter()
 const $q = useQuasar()
 const { profile, fullName, initials, updateProfile, logout } = useAuth()
@@ -620,6 +631,13 @@ function addChannel() {
   .channel-active {
     background: rgba($accent, 0.16);
     color: $text-link;
+  }
+  .channel-draft {
+    max-width: 100%;
+    span {
+      color: $text-link;
+      font-weight: 600;
+    }
   }
   .channel-pinned {
     background: rgba($accent, 0.12);

@@ -49,6 +49,12 @@
       </article>
     </div>
     <div class="composer-area">
+      <TypingIndicator
+        :channel-id="activeChannel?.id"
+        :members="channelMembers"
+        :current-user-id="profile.id"
+        :enabled="canSend && profile.status !== 'offline'"
+      />
       <transition name="suggestions">
         <div
           v-if="showSuggestions"
@@ -164,10 +170,12 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { QInput } from 'quasar'
+import TypingIndicator from '@/components/TypingIndicator.vue'
 import { useAuth } from '@/states/auth'
 import { useChannels } from '@/states/channels'
 import { useMessages } from '@/states/messages'
 import { useUsers } from '@/states/users'
+import { useDrafts } from '@/states/drafts'
 import { commandDefinitions as definitions } from '@/commands/definitions'
 import { argumentLabel } from '@/commands/parser'
 import { executeCommand } from '@/commands/execute'
@@ -190,7 +198,11 @@ const commandDefinitions = Object.values(definitions).map(command => ({
 const route = useRoute()
 const router = useRouter()
 const channelName = computed(() => String(route.params.name || 'general'))
-const draft = ref('')
+const drafts = useDrafts()
+const draft = computed({
+  get: () => drafts.get(channelName.value),
+  set: value => drafts.set(channelName.value, value)
+})
 const composerInput = ref<QInput | null>(null)
 const selected = ref(0)
 const dismissed = ref(false)
@@ -298,7 +310,6 @@ async function confirmDelete() {
   try {
     channels.remove(pendingDeleteId.value)
     pendingDeleteId.value = null
-    draft.value = ''
     await navigateTo()
   } catch (error) {
     pendingDeleteId.value = null
@@ -311,12 +322,12 @@ const currentMessages = computed(() =>
 const author = (message: Pick<Message, 'authorId'>) =>
   users.getById(message.authorId)?.nickname || 'Unknown user'
 watch(channelName, () => {
-  draft.value = ''
   feedback.value = ''
   membersOpen.value = false
 })
 async function sendMessage() {
   if (!draft.value.trim()) return
+  const sourceChannelName = channelName.value
   hasError.value = false
   feedback.value = ''
   try {
@@ -339,7 +350,7 @@ async function sendMessage() {
         throw new Error('Join this channel before sending messages.')
       messages.send(activeChannel.value.id, draft.value)
     }
-    draft.value = ''
+    drafts.remove(sourceChannelName)
     await nextTick()
     const history = document.querySelector('.message-history')
     history?.scrollTo({ top: history.scrollHeight, behavior: 'smooth' })

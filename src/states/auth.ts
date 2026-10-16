@@ -3,6 +3,7 @@ import type { Profile } from '../types/profile.ts'
 import type { UserStatus } from '../types/member.ts'
 import { mockProfile } from '../mock/users.ts'
 import { useUsers } from './users.ts'
+import { useDrafts } from './drafts.ts'
 
 const profile = ref<Profile>(structuredClone(mockProfile))
 const isLoggedIn = ref(false)
@@ -39,6 +40,7 @@ function login(nickname: string) {
 }
 
 function logout() {
+  useDrafts().clear()
   profile.value.status = 'offline'
   isLoggedIn.value = false
   syncDirectory()
