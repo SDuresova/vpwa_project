@@ -16,10 +16,7 @@
           size="24px"
         />
         <q-toolbar-title class="channel-title"
-          >{{ channelName
-          }}<span class="channel-description"
-            >A tiny space to grow.</span
-          ></q-toolbar-title
+          >{{ channelName }}<span class="channel-description">A tiny space to grow.</span></q-toolbar-title
         >
         <q-btn
           flat
@@ -27,97 +24,10 @@
           icon="group"
           aria-label="Toggle members"
           @click="rightDrawerOpen = !rightDrawerOpen"
-          ><q-tooltip>Members</q-tooltip></q-btn
         >
-        <q-btn
-          flat
-          round
-          icon="inbox"
-          :aria-label="
-            hasUnreadInvitations ? 'Inbox, unread invitation' : 'Inbox'
-          "
-          :aria-expanded="inboxOpen"
-          aria-haspopup="true"
-          aria-controls="notification-inbox"
-        >
-          <q-badge
-            v-if="hasUnreadInvitations"
-            rounded
-            floating
-            color="positive"
-            class="inbox-dot"
-            aria-hidden="true"
-          />
-          <q-tooltip>Inbox</q-tooltip>
-          <q-menu
-            v-model="inboxOpen"
-            dark
-            anchor="bottom right"
-            self="top right"
-            :offset="[0, 10]"
-            class="notification-inbox"
-            @show="markInvitationsRead"
-          >
-            <section id="notification-inbox" aria-label="Notifications">
-              <div class="inbox-heading">
-                <h2>Inbox</h2>
-                <span>{{ invitations.length }} pending</span>
-              </div>
-              <q-list v-if="invitations.length" class="q-pa-sm">
-                <q-item
-                  v-for="ch in invitations"
-                  :key="ch.name"
-                  class="inbox-invitation"
-                >
-                  <q-item-section avatar top>
-                    <q-avatar
-                      color="secondary"
-                      text-color="white"
-                      icon="mail_outline"
-                      size="36px"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-weight-bold"
-                      >Channel invitation</q-item-label
-                    >
-                    <q-item-label class="inbox-copy"
-                      >You've been invited to join <strong>{{ ch.name }}</strong
-                      >.</q-item-label
-                    >
-                    <q-item-label caption>{{
-                      ch.type === 'private'
-                        ? 'Private channel'
-                        : 'Public channel'
-                    }}</q-item-label>
-                    <div class="row q-gutter-sm q-mt-sm">
-                      <q-btn
-                        no-caps
-                        unelevated
-                        color="primary"
-                        label="Join"
-                        :aria-label="`Join ${ch.name}`"
-                        @click="acceptInvitation(ch)"
-                      />
-                      <q-btn
-                        no-caps
-                        flat
-                        label="Decline"
-                        :aria-label="`Decline ${ch.name}`"
-                        @click="declineInvitation(ch.id)"
-                      />
-                    </div>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-              <div v-else class="inbox-empty" role="status">
-                <q-icon name="done_all" size="32px" />
-                <p>You're all caught up.</p>
-                <span>New notifications will appear here.</span>
-              </div>
-            </section>
-          </q-menu>
+          <q-tooltip>Members</q-tooltip>
         </q-btn>
+        <InboxMenu @navigate="closeMobileChannels" />
       </q-toolbar>
     </q-header>
 
@@ -128,139 +38,7 @@
       :breakpoint="900"
       class="channel-drawer"
     >
-      <div class="sidebar-stack">
-        <div class="workspace-heading"
-          ><q-avatar
-            rounded
-            color="primary"
-            text-color="white"
-            icon="forest"
-            size="38px"
-          /><div
-            ><strong>VPWA</strong><span>Your conversation space</span></div
-          ></div
-        >
-        <nav class="channel-navigation" aria-label="Channels">
-          <div class="section-heading"
-            >CHANNELS<q-btn
-              flat
-              round
-              dense
-              size="sm"
-              icon="add"
-              aria-label="Create channel"
-              @click="createDialog = true"
-          /></div>
-          <q-item
-            v-for="ch in joinedChannels"
-            :key="ch.name"
-            clickable
-            :to="`/channels/${ch.name}`"
-            active-class="channel-active"
-            class="channel-item"
-            :class="{ 'channel-pinned': ch.pinned }"
-            @click="closeMobileChannels"
-          >
-            <q-item-section avatar
-              ><q-icon :name="ch.type === 'private' ? 'lock' : 'tag'"
-            /></q-item-section>
-            <q-item-section>
-              <q-item-label>{{ ch.name }}</q-item-label>
-              <q-item-label
-                v-if="ch.name !== channelName && drafts.get(ch.name).trim()"
-                caption
-                class="channel-draft ellipsis"
-                :title="'Draft: ' + drafts.get(ch.name)"
-                ><span>Draft:</span> {{ drafts.get(ch.name) }}</q-item-label
-              >
-            </q-item-section>
-            <q-item-section side v-if="ch.pinned">
-              <q-icon name="push_pin" size="16px" aria-label="Pinned channel">
-                <q-tooltip>Pinned channel</q-tooltip>
-              </q-icon>
-            </q-item-section>
-            <q-item-section side v-if="ch.unreadCount"
-              ><q-badge rounded color="primary">{{
-                ch.unreadCount
-              }}</q-badge></q-item-section
-            >
-            <q-item-section side>
-              <q-btn
-                flat
-                round
-                dense
-                size="sm"
-                icon="more_vert"
-                :aria-label="`Actions for ${ch.name}`"
-                @click.prevent.stop
-              >
-                <q-menu dark
-                  ><q-list dense>
-                    <q-item
-                      clickable
-                      v-close-popup
-                      @click.prevent.stop="togglePin(ch.id)"
-                    >
-                      <q-item-section>{{
-                        ch.pinned ? 'Unpin channel' : 'Pin channel'
-                      }}</q-item-section>
-                    </q-item>
-                    <q-item clickable v-close-popup @click="removeChannel(ch)"
-                      ><q-item-section>Leave channel</q-item-section></q-item
-                    >
-                    <q-item
-                      v-if="isAdmin(ch.id)"
-                      clickable
-                      v-close-popup
-                      @click="removeChannel(ch)"
-                      ><q-item-section>Delete channel</q-item-section></q-item
-                    >
-                  </q-list></q-menu
-                >
-              </q-btn>
-            </q-item-section>
-          </q-item>
-        </nav>
-        <!-- This stays at the bottom while the channel list scrolls. -->
-        <div class="profile-bar">
-          <button
-            class="profile-trigger"
-            @click="openProfile"
-            aria-label="Open my profile"
-          >
-            <span class="avatar-wrap"
-              ><q-avatar size="38px" color="primary" text-color="white">{{
-                initials
-              }}</q-avatar
-              ><span
-                class="presence-dot"
-                :style="{ background: statusColors[profile.status] }"
-            /></span>
-            <span class="profile-summary"
-              ><strong>{{ profile.nickname }}</strong
-              ><span>{{
-                profile.status === 'dnd' ? 'Do not disturb' : profile.status
-              }}</span></span
-            >
-          </button>
-          <q-btn
-            flat
-            round
-            dense
-            icon="settings"
-            aria-label="Edit my profile"
-            @click="openProfile"
-          />
-          <q-btn
-            flat
-            round
-            dense
-            icon="logout"
-            aria-label="Log out"
-            @click="logOut"
-          />
-        </div>
-      </div>
+      <ChannelSidebar @navigate="closeMobileChannels" />
     </q-drawer>
 
     <q-drawer
@@ -271,288 +49,39 @@
       :breakpoint="1100"
       class="members-drawer"
     >
-      <div class="section-heading q-mt-sm"
-        >MEMBERS — {{ members.length
-        }}<q-btn
-          flat
-          dense
-          round
-          icon="close"
-          aria-label="Close members"
-          @click="rightDrawerOpen = false"
-      /></div>
-      <q-item
-        v-for="member in members"
-        :key="member.nickname"
-        class="member-row"
-      >
-        <q-item-section avatar
-          ><span class="avatar-wrap"
-            ><q-avatar size="34px" color="secondary" text-color="white">{{
-              member.nickname[0].toUpperCase()
-            }}</q-avatar
-            ><span
-              class="presence-dot"
-              :style="{ background: statusColors[member.status] }" /></span
-        ></q-item-section>
-        <q-item-section
-          ><q-item-label
-            >{{ member.nickname }}
-            <q-icon
-              v-if="member.isAdmin"
-              name="star"
-              color="accent"
-              size="14px" /></q-item-label
-          ><q-item-label caption>{{
-            member.status
-          }}</q-item-label></q-item-section
-        >
-      </q-item>
-      <div v-if="!members.length" class="q-pa-md">No members to display.</div>
+      <MembersList @close="rightDrawerOpen = false" />
     </q-drawer>
 
-    <q-page-container><router-view /></q-page-container>
-
-    <q-dialog v-model="profileDialog">
-      <q-card class="profile-card">
-        <div class="profile-banner"
-          ><q-btn
-            flat
-            round
-            icon="close"
-            aria-label="Close profile"
-            v-close-popup
-        /></div>
-        <q-card-section>
-          <q-avatar
-            class="profile-large-avatar"
-            size="64px"
-            color="primary"
-            text-color="white"
-            >{{ initials }}</q-avatar
-          >
-          <h2 class="profile-name">{{ fullName || profile.nickname }}</h2
-          ><p class="muted">@{{ profile.nickname }}</p>
-          <q-form @submit="saveProfile" class="q-gutter-md">
-            <div class="name-fields"
-              ><q-input
-                dark
-                outlined
-                dense
-                v-model.trim="draft.firstName"
-                label="First name"
-                :rules="required" /><q-input
-                dark
-                outlined
-                dense
-                v-model.trim="draft.lastName"
-                label="Surname"
-                :rules="required"
-            /></div>
-            <q-input
-              dark
-              outlined
-              dense
-              v-model.trim="draft.nickname"
-              label="Nickname"
-              :rules="required"
-            />
-            <q-input
-              dark
-              outlined
-              dense
-              v-model.trim="draft.email"
-              label="Email"
-              type="email"
-              :rules="required"
-            />
-            <q-select
-              dark
-              outlined
-              dense
-              v-model="draft.status"
-              :options="['online', 'dnd', 'offline']"
-              label="Status"
-            />
-            <div class="row justify-end q-gutter-sm"
-              ><q-btn flat label="Cancel" v-close-popup /><q-btn
-                color="primary"
-                label="Save profile"
-                type="submit"
-                no-caps
-            /></div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-
-    <q-dialog v-model="createDialog">
-      <q-card class="profile-card q-pa-lg">
-        <h2 class="profile-name q-mt-none">Create a channel</h2>
-        <q-form @submit="addChannel" class="q-gutter-md">
-          <q-input
-            dark
-            outlined
-            v-model.trim="newChannelName"
-            label="Channel name"
-            :rules="[
-              v =>
-                /^[a-z0-9-]+$/.test(v) ||
-                'Use lowercase letters, numbers and hyphens',
-              v =>
-                !channels.some(ch => ch.name === v) ||
-                'This channel already exists'
-            ]"
-          />
-          <q-option-group
-            dark
-            v-model="newChannelType"
-            inline
-            :options="[
-              { label: 'Public', value: 'public' },
-              { label: 'Private', value: 'private' }
-            ]"
-          />
-          <div class="row justify-end"
-            ><q-btn flat label="Cancel" v-close-popup /><q-btn
-              color="primary"
-              label="Create"
-              type="submit"
-          /></div>
-        </q-form>
-      </q-card>
-    </q-dialog>
+    <q-page-container>
+      <router-view />
+    </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { useAuth } from '@/states/auth'
 import { useChannels } from '@/states/channels'
-import { useDrafts } from '@/states/drafts'
-import type { Channel, ChannelPrivacyType } from '@/types/channel'
+import { useActiveChannel } from '@/composables/useActiveChannel'
+import InboxMenu from '@/components/InboxMenu.vue'
+import ChannelSidebar from '@/components/ChannelSidebar.vue'
+import MembersList from '@/components/MembersList.vue'
 
-const route = useRoute()
-const drafts = useDrafts()
-const router = useRouter()
 const $q = useQuasar()
-const { profile, fullName, initials, updateProfile, logout } = useAuth()
-const {
-  channels,
-  joinedChannels,
-  invitations,
-  hasUnreadInvitations,
-  getByName,
-  isAdmin,
-  membersOf,
-  markInvitationsRead,
-  markRead,
-  togglePin,
-  create,
-  leave,
-  remove,
-  acceptInvitation: accept,
-  declineInvitation
-} = useChannels()
+const { markRead } = useChannels()
+const { channelName, activeChannel } = useActiveChannel()
+
 const leftDrawerOpen = ref(false)
 const rightDrawerOpen = ref(false)
-const createDialog = ref(false)
-const profileDialog = ref(false)
-const inboxOpen = ref(false)
-const newChannelName = ref('')
-const newChannelType = ref<ChannelPrivacyType>('public')
-const draft = reactive({ ...profile.value })
-const required = [
-  (value: string) => !!value?.trim() || 'This field is required'
-]
-const statusColors = { online: '#23a55a', dnd: '#f23f42', offline: '#b5c1ad' }
-const channelName = computed(() => String(route.params.name || 'general'))
-const activeChannel = computed(() => getByName(channelName.value))
-const members = computed(() =>
-  activeChannel.value
-    ? membersOf(activeChannel.value.id).map(member => ({
-        ...member,
-        isAdmin: member.id === activeChannel.value?.adminId
-      }))
-    : []
-)
+
 watch(
   () => activeChannel.value?.id,
-  id => {
-    if (id !== undefined) markRead(id)
-  },
+  id => id !== undefined && markRead(id),
   { immediate: true }
 )
-function errorNotice(error: unknown) {
-  $q.notify({
-    color: 'negative',
-    message: error instanceof Error ? error.message : 'Something went wrong.'
-  })
-}
-function acceptInvitation(channel: Pick<Channel, 'id' | 'name'>) {
-  try {
-    accept(channel.id)
-    inboxOpen.value = false
-    router.push('/channels/' + channel.name)
-    closeMobileChannels()
-  } catch (error) {
-    errorNotice(error)
-  }
-}
-function openProfile() {
-  Object.assign(draft, profile.value)
-  profileDialog.value = true
-}
-function saveProfile() {
-  try {
-    const { id: _id, ...changes } = draft
-    updateProfile(changes)
-    profileDialog.value = false
-  } catch (error) {
-    errorNotice(error)
-  }
-}
-function logOut() {
-  logout()
-  router.push('/login')
-}
+
 function closeMobileChannels() {
   if ($q.screen.width <= 900) leftDrawerOpen.value = false
-}
-function removeChannel(channel: Pick<Channel, 'id' | 'name'>) {
-  const finish = () => {
-    try {
-      if (isAdmin(channel.id)) remove(channel.id)
-      else leave(channel.id)
-      if (channelName.value === channel.name)
-        router.push('/channels/' + (joinedChannels.value[0]?.name || 'general'))
-    } catch (error) {
-      errorNotice(error)
-    }
-  }
-  if (isAdmin(channel.id))
-    $q.dialog({
-      title: 'Delete #' + channel.name + '?',
-      message:
-        'As administrator, leaving deletes this channel and its message history.',
-      cancel: true,
-      persistent: true
-    }).onOk(finish)
-  else finish()
-}
-function addChannel() {
-  try {
-    create(newChannelName.value, newChannelType.value)
-    router.push('/channels/' + newChannelName.value)
-    newChannelName.value = ''
-    newChannelType.value = 'public'
-    createDialog.value = false
-    closeMobileChannels()
-  } catch (error) {
-    errorNotice(error)
-  }
 }
 </script>
 
@@ -583,32 +112,8 @@ function addChannel() {
     color: $text-body;
     border-left: 1px solid rgba($text-muted, 0.08);
   }
-  .sidebar-stack {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  .workspace-heading {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 22px 18px;
-    border-bottom: 1px solid rgba($text-muted, 0.12);
-    strong {
-      display: block;
-      color: $text-heading;
-      letter-spacing: 2px;
-    }
-    span {
-      font-size: 11px;
-      color: $text-muted;
-    }
-  }
-  .channel-navigation {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 10px;
-  }
+
+  // Zdieľané medzi sidebarom a zoznamom členov
   .section-heading {
     display: flex;
     align-items: center;
@@ -619,89 +124,9 @@ function addChannel() {
     letter-spacing: 1.2px;
     color: $text-muted;
   }
-  .channel-item {
-    min-height: 40px;
-    border-radius: 6px;
-    margin-bottom: 4px;
-    padding: 8px 12px;
-    .q-item__section--avatar {
-      min-width: 30px;
-    }
-  }
-  .channel-active {
-    background: rgba($accent, 0.16);
-    color: $text-link;
-  }
-  .channel-draft {
-    max-width: 100%;
-    span {
-      color: $text-link;
-      font-weight: 600;
-    }
-  }
-  .channel-pinned {
-    background: rgba($accent, 0.12);
-    color: $text-link;
-    font-weight: 600;
-    .q-icon {
-      color: $text-link;
-    }
-    &.channel-active {
-      background: rgba($accent, 0.24);
-    }
-  }
   .q-item__label--caption {
     color: $text-muted;
     font-size: 11px;
-  }
-  .sidebar-note {
-    color: $text-muted;
-    font-size: 12px;
-    line-height: 1.7;
-    padding: 20px 12px;
-    opacity: 0.65;
-  }
-  .profile-bar {
-    display: flex;
-    align-items: center;
-    padding: 12px 8px;
-    gap: 4px;
-    background: $dark-page;
-    border-top: 1px solid rgba($text-muted, 0.1);
-  }
-  .profile-trigger {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    padding: 4px;
-    cursor: pointer;
-    text-align: left;
-    border-radius: 6px;
-    &:hover {
-      background: rgba($accent, 0.1);
-    }
-  }
-  .profile-summary {
-    min-width: 0;
-    strong,
-    span {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    strong {
-      font-size: 13px;
-    }
-    span {
-      font-size: 11px;
-      color: $text-muted;
-    }
   }
   .avatar-wrap {
     position: relative;
@@ -717,10 +142,6 @@ function addChannel() {
     right: -1px;
     bottom: -1px;
   }
-  .member-row {
-    padding: 10px 18px;
-    font-size: 13px;
-  }
   button:focus-visible {
     outline: 2px solid $focus-ring;
     outline-offset: 2px;
@@ -731,6 +152,8 @@ function addChannel() {
     }
   }
 }
+
+// Zdieľané medzi ProfileDialog a CreateChannelDialog
 .profile-card {
   width: 440px;
   max-width: 94vw;
@@ -739,94 +162,10 @@ function addChannel() {
   border: 1px solid rgba($accent, 0.2);
   border-radius: 12px;
 }
-.profile-banner {
-  height: 88px;
-  background: linear-gradient(120deg, $primary, $secondary);
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-  padding: 8px;
-}
-.profile-large-avatar {
-  margin-top: -48px;
-  border: 5px solid $dark;
-}
 .profile-name {
   font-size: 22px;
   font-weight: 700;
   margin-bottom: 4px;
   overflow-wrap: anywhere;
-}
-.muted {
-  color: $text-muted;
-}
-.name-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 420px) {
-  .name-fields {
-    grid-template-columns: 1fr;
-  }
-}
-// QMenu is rendered outside .chat-shell, so its styles live at the top level.
-.inbox-dot {
-  min-width: 8px;
-  min-height: 8px;
-  padding: 0;
-  top: 6px;
-  right: 6px;
-  border: 2px solid $dark;
-  box-sizing: content-box;
-}
-.notification-inbox {
-  width: 360px;
-  max-width: calc(100vw - 24px);
-  background: $dark;
-  color: $text-body;
-  border: 1px solid rgba($text-muted, 0.18);
-  border-radius: 10px;
-
-  .inbox-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    border-bottom: 1px solid rgba($text-muted, 0.15);
-    h2 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 700;
-    }
-    span {
-      color: $text-muted;
-      font-size: 12px;
-    }
-  }
-  .inbox-invitation {
-    background: rgba($accent, 0.1);
-    border-radius: 6px;
-    padding: 16px 12px;
-  }
-  .inbox-copy {
-    line-height: 1.5 !important;
-    overflow-wrap: anywhere;
-  }
-  .q-item__label--caption {
-    color: $text-muted;
-  }
-  .inbox-empty {
-    padding: 32px 16px;
-    text-align: center;
-    color: $text-muted;
-    p {
-      color: $text-heading;
-      margin: 12px 0 4px;
-    }
-    span {
-      font-size: 12px;
-    }
-  }
 }
 </style>
