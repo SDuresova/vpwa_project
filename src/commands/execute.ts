@@ -1,5 +1,10 @@
 import { useChannels } from '../states/channels.ts'
 import type { CommandDefinition } from '../types/command.ts'
+import { commandDefinitions } from './definitions.ts'
+import { parseCommand } from './parser.ts'
+import { handlers } from './handlers.ts'
+import type { CommandContext, CommandResult } from '../types/command.ts'
+
 
 const { getById, isJoined, isAdmin } = useChannels()
 
@@ -29,16 +34,14 @@ function checkRules(definition: CommandDefinition, channelId: number | null) {
     )
   }
 }
-import { commandDefinitions } from './definitions.ts'
-import { parseCommand } from './parser.ts'
-import { handlers } from './handlers.ts'
-import type { CommandContext, CommandResult } from '../types/command.ts'
 
-export function executeCommand(
-  input: string,
-  context: CommandContext
-): CommandResult {
-  const parsed = parseCommand(input)
-  checkRules(commandDefinitions[parsed.name], context.channelId)
-  return handlers[parsed.name](parsed.args, context)
+export function executeCommand(input: string, context: CommandContext): CommandResult {
+  const { name, args } = parseCommand(input) // parse command
+  const command = commandDefinitions[name] // get the definition of command
+
+  checkRules(command, context.channelId) // check if correct
+
+  const result = handlers[name](args, context) // call the function
+
+  return result // result ready for layout interaction
 }
