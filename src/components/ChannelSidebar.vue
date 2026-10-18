@@ -1,10 +1,15 @@
 <template>
   <div class="sidebar-stack">
     <div class="workspace-heading"
-      ><q-avatar rounded color="primary" text-color="white" icon="forest" size="38px" /><div
+      ><q-avatar
+        rounded
+        color="primary"
+        text-color="white"
+        icon="forest"
+        size="38px" /><div
         ><strong>VPWA</strong><span>Your conversation space</span></div
-      ></div
-    >
+      ><NotificationMenu
+    /></div>
 
     <nav class="channel-navigation" aria-label="Channels">
       <div class="section-heading"
@@ -37,6 +42,7 @@ import { useChannels } from '@/states/channels'
 import ChannelItem from './ChannelItem.vue'
 import ProfileBar from './ProfileBar.vue'
 import CreateChannelDialog from './CreateChannelDialog.vue'
+import NotificationMenu from './NotificationMenu.vue'
 
 const emit = defineEmits<{ navigate: [] }>()
 
@@ -62,7 +68,7 @@ const createOpen = ref(false)
       color: $text-heading;
       letter-spacing: 2px;
     }
-    span {
+    > div > span {
       font-size: 11px;
       color: $text-muted;
     }

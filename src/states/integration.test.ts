@@ -6,6 +6,58 @@ import { useMessages } from './messages.ts'
 import { useUsers } from './users.ts'
 import { executeCommand } from '../commands/execute.ts'
 import { parseCommand } from '../commands/parser.ts'
+import { shouldNotify } from './notifications.ts'
+
+test('notification preferences, visibility, presence and incoming delivery', () => {
+  const message = {
+    id: 999999,
+    channelId: 1,
+    authorId: 2,
+    content: 'Hello',
+    createdAt: new Date().toISOString(),
+    mentionedUsers: [] as number[]
+  }
+  const context = {
+    userId: 1,
+    status: 'online' as const,
+    joined: true,
+    visible: false
+  }
+  assert.equal(shouldNotify(message, context, 'all'), true)
+  assert.equal(shouldNotify(message, context, 'nothing'), false)
+  assert.equal(shouldNotify(message, context, 'mentions'), false)
+  assert.equal(
+    shouldNotify({ ...message, mentionedUsers: [1] }, context, 'mentions'),
+    true
+  )
+  assert.equal(
+    shouldNotify(message, { ...context, visible: true }, 'all'),
+    false
+  )
+  assert.equal(
+    shouldNotify(message, { ...context, status: 'dnd' }, 'all'),
+    false
+  )
+  assert.equal(
+    shouldNotify(message, { ...context, status: 'offline' }, 'all'),
+    false
+  )
+  assert.equal(
+    shouldNotify(message, { ...context, joined: false }, 'all'),
+    false
+  )
+  assert.equal(shouldNotify({ ...message, authorId: 1 }, context, 'all'), false)
+  const auth = useAuth()
+  auth.login('jozko')
+  const messages = useMessages()
+  let deliveries = 0
+  const unsubscribe = messages.onIncoming(() => deliveries++)
+  messages.receive(message)
+  messages.receive(message)
+  assert.equal(deliveries, 1)
+  unsubscribe()
+  auth.logout()
+})
 
 test('TypeScript chat integration', async t => {
   const auth = useAuth()

@@ -44,8 +44,8 @@
             ><span v-if="message.authorId === profile.id" class="you-label"
               >you</span
             ></div
-          ><p>{{ message.content }}</p></div
-        >
+          ><p><MentionText :text="message.content" /></p
+        ></div>
       </article>
     </div>
     <div class="composer-area">
@@ -171,6 +171,7 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { QInput } from 'quasar'
 import TypingIndicator from '@/components/TypingIndicator.vue'
+import MentionText from '@/components/MentionText.vue'
 import { useAuth } from '@/states/auth'
 import { useChannels } from '@/states/channels'
 import { useMessages } from '@/states/messages'
@@ -372,6 +373,37 @@ async function sendMessage() {
   overflow-y: auto;
   min-height: 0;
   padding: 32px 0 12px;
+  scrollbar-width: thin;
+  scrollbar-color: $primary transparent;
+
+  // Chromium/WebKit: a rounded green thumb without a track or arrow buttons.
+  @supports selector(::-webkit-scrollbar) {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: $primary;
+      border-radius: 999px;
+      border: 1px solid $dark;
+      min-height: 36px;
+      &:hover {
+        background: $accent;
+      }
+    }
+    &::-webkit-scrollbar-button {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+  }
 }
 .channel-welcome {
   padding: 20px 28px;

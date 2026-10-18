@@ -1,3 +1,4 @@
+import type { DeepReadonly } from 'vue'
 import { readonly, ref } from 'vue'
 import type { Message } from '../types/message.ts'
 import { mockMessages } from '../mock/messages.ts'
@@ -6,6 +7,28 @@ import { useUsers } from './users.ts'
 import { useChannels } from './channels.ts'
 
 const messages = ref<Record<number, Message[]>>(structuredClone(mockMessages))
+const incomingListeners = new Set<(message: DeepReadonly<Message>) => void>()
+
+// Entry point for incoming messages once a transport/backend is connected.
+function receive(message: Message) {
+  if (
+    !useChannels().isJoined(message.channelId) ||
+    profile.value.status === 'offline'
+  )
+    return
+  const history = (messages.value[message.channelId] ??= [])
+  if (history.some(existing => existing.id === message.id)) return
+  const copy = structuredClone(message)
+  history.push(copy)
+  incomingListeners.forEach(listener => listener(readonly(copy)))
+}
+
+function onIncoming(listener: (message: DeepReadonly<Message>) => void) {
+  incomingListeners.add(listener)
+  return () => {
+    incomingListeners.delete(listener)
+  }
+}
 
 const { profile } = useAuth()
 const { getByNickname } = useUsers()
@@ -59,6 +82,8 @@ function removeChannel(channelId: number) {
 export function useMessages() {
   return {
     forChannel,
+    receive,
+    onIncoming,
     send,
     removeChannel
   }
