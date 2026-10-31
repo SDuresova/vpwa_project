@@ -2,23 +2,19 @@
 .thumbs.db
 node_modules
 
-# .env files
-.env*
+# .env files (example ponechať v gite)
+.env
+.env.*
+!.env.example
 
-# Quasar core related directories
+# Quasar
 .quasar
-/dist
-/quasar.config.*.temporary.compiled*
+frontend/dist
+frontend/quasar.config.*.temporary.compiled*
 
-# Cordova related directories and files
-/src-cordova/node_modules
-/src-cordova/platforms
-/src-cordova/plugins
-/src-cordova/www
-
-# Capacitor related directories and files
-/src-capacitor/www
-/src-capacitor/node_modules
+# Adonis
+backend/build
+backend/tmp
 
 # Log files
 npm-debug.log*
