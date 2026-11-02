@@ -141,6 +141,8 @@ import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/states/auth'
+import { api } from '@/boot/axios'
+import { isAxiosError } from 'axios'
 const { updateProfile } = useAuth()
 
 const router = useRouter()
@@ -152,25 +154,26 @@ const nickname = ref('')
 const password = ref('')
 const showPassword = ref(false)
 
-const onSubmit = () => {
+const onSubmit = async () => {
   try {
-    updateProfile({
+    await api.post('/auth/signup', {
       firstName: firstName.value,
       lastName: surname.value,
       nickname: nickname.value,
-      email: email.value
+      email: email.value,
+      password: password.value
     })
   } catch (error) {
-    $q.notify({
-      color: 'negative',
-      message: error instanceof Error ? error.message : 'Registration failed.'
-    })
+    const message = isAxiosError(error)
+      ? (error.response?.data?.errors?.[0]?.message ?? 'Registration failed.')
+      : 'Registration failed.'
+    $q.notify({ color: 'negative', message })
     return
   }
-  // Prototype navigation only; no account is saved yet.
+  // account saved
   $q.notify({
     color: 'info',
-    message: 'Registration preview complete. Try the login screen.',
+    message: 'Registration complete. Try the login screen.',
     position: 'top'
   })
   router.push('/login')
