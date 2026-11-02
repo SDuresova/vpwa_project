@@ -1,38 +1,57 @@
-# Quasar App (vpwa)
+# VPWA – chat aplikácia v štýle Slack
 
-## Install the dependencies
+Semestrálny projekt z predmetu Vývoj progresívnych webových aplikácií (FIIT STU).
 
-```bash
-pnpm install
-# or: yarn/npm/bun install
+- `frontend/` – Quasar (Vue 3 + TypeScript), SPA/PWA klient
+- `backend/` – AdonisJS (TypeScript), REST API + websockety
+- databáza – MySQL
+
+## Požiadavky
+
+- Node.js 22+
+- MySQL (napr. XAMPP / Laragon)
+
+## Spustenie
+
+### 1. Databáza
+
+V MySQL vytvor databázu:
+
+```sql
+CREATE DATABASE vpwa_chat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### Start the app in development mode (HMR, error reporting, etc.)
+### 2. Backend
 
 ```bash
-quasar dev
+cd backend
+npm install
+cp .env.example .env      # doplň DB_USER, DB_PASSWORD...
+node ace generate:key
+node ace migration:run
+npm run dev               # http://localhost:3333
 ```
 
-### Format & Lint the files
+### 3. Frontend
 
 ```bash
-pnpm run lint
-# or: yarn/npm/bun run lint
+cd frontend
+npm install
+npx quasar dev            # http://localhost:9000
 ```
 
-...or just check formatting & linting:
+Backend aj frontend musia bežať súčasne (dva terminály).
 
-```bash
-pnpm run lint:check
-# or: yarn/npm/bun run lint:check
-```
+## Užitočné príkazy (backend)
 
-### Build the app for production
+| Príkaz | Popis |
+|---|---|
+| `node ace migration:run` | spustí nové migrácie |
+| `node ace migration:fresh` | zmaže všetky tabuľky a spustí migrácie nanovo |
+| `node ace db:seed` | naplní DB testovacími dátami |
+| `node ace list` | zoznam všetkých príkazov |
 
-```bash
-quasar build
-```
+## Autori
 
-### Customize the configuration
-
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-file).
+- …
+- …
