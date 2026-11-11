@@ -33,6 +33,7 @@ router
         router.post('/action', [ChatController, 'action'])
         router.post('/messages', [ChatController, 'message'])
       })
-      .prefix('chat').use(middleware.auth())
+      .prefix('chat')
+      .use(middleware.auth())
   })
   .prefix('/api/v1')
