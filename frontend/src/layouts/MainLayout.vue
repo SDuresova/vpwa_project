@@ -53,13 +53,17 @@
     </q-drawer>
 
     <q-page-container>
+      <q-banner v-if="syncError" class="bg-negative text-white" role="alert">{{ syncError }} — reconnecting…</q-banner>
       <router-view />
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '@/states/auth'
+import { refreshChat, resetChat, syncError } from '@/states/chat'
 import { useQuasar } from 'quasar'
 import { useChannels } from '@/states/channels'
 import { useActiveChannel } from '@/composables/useActiveChannel'
@@ -67,6 +71,20 @@ import InboxMenu from '@/components/InboxMenu.vue'
 import ChannelSidebar from '@/components/ChannelSidebar.vue'
 import MembersList from '@/components/MembersList.vue'
 
+const router = useRouter()
+const auth = useAuth()
+let pollTimer: ReturnType<typeof setTimeout> | undefined
+let disposed = false
+async function poll() {
+  try { await refreshChat() }
+  catch (error) { syncError.value = error instanceof Error ? error.message : 'Connection failed' }
+  finally { if (!disposed && auth.isLoggedIn.value) pollTimer = setTimeout(poll, 2000) }
+}
+onMounted(poll)
+onUnmounted(() => { disposed = true; clearTimeout(pollTimer) })
+watch(auth.isLoggedIn, loggedIn => {
+  if (!loggedIn) { resetChat(); router.replace('/login') }
+})
 const $q = useQuasar()
 const { markRead } = useChannels()
 const { channelName, activeChannel } = useActiveChannel()

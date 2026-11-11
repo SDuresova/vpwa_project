@@ -48,4 +48,4 @@ export interface CommandResult {
 export type CommandHandler = (
   args: string[],
   context: CommandContext
-) => CommandResult
+) => CommandResult | Promise<CommandResult>

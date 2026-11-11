@@ -4,7 +4,7 @@
     :to="`/channels/${channel.name}`"
     active-class="channel-active"
     class="channel-item"
-    :class="{ 'channel-pinned': channel.pinned }"
+    :class="{ 'channel-pinned': channel.pinned || channel.invited }"
     @click="emit('navigate')"
   >
     <q-item-section avatar>
@@ -12,7 +12,7 @@
     </q-item-section>
 
     <q-item-section>
-      <q-item-label>{{ channel.name }}</q-item-label>
+      <q-item-label>{{ channel.name }} <q-badge v-if="channel.invited" color="primary">Invited</q-badge></q-item-label>
       <q-item-label
         v-if="draft"
         caption
@@ -45,7 +45,7 @@
       >
         <q-menu dark>
           <q-list dense>
-            <q-item clickable v-close-popup @click.prevent.stop="togglePin(channel.id)">
+            <q-item clickable v-close-popup @click.prevent.stop="attempt(() => togglePin(channel.id))">
               <q-item-section>{{ channel.pinned ? 'Unpin channel' : 'Pin channel' }}</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="removeChannel">
@@ -91,8 +91,8 @@ function removeChannel() {
   const admin = isAdmin(id)
 
   const finish = () =>
-    attempt(() => {
-      admin ? remove(id) : leave(id)
+    attempt(async () => {
+      await (admin ? remove(id) : leave(id))
       if (channelName.value === name)
         router.push('/channels/' + (joinedChannels.value[0]?.name || 'general'))
     })

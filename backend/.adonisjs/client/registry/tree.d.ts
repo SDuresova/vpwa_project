@@ -13,9 +13,15 @@ export interface ApiDefinition {
   profile: {
     profile: {
       show: typeof routes['profile.profile.show']
+      update: typeof routes['profile.profile.update']
     }
     accessTokens: {
       destroy: typeof routes['profile.access_tokens.destroy']
     }
+  }
+  chat: {
+    index: typeof routes['chat.index']
+    action: typeof routes['chat.action']
+    message: typeof routes['chat.message']
   }
 }

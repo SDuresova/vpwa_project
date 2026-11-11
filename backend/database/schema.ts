@@ -32,6 +32,73 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class ChannelSchema extends BaseModel {
+  static $columns = ['adminId', 'id', 'lastMessageAt', 'name', 'type'] as const
+  $columns = ChannelSchema.$columns
+  @column()
+  declare adminId: number
+  @column({ isPrimary: true })
+  declare id: number
+  @column.dateTime()
+  declare lastMessageAt: DateTime
+  @column()
+  declare name: string
+  @column()
+  declare type: string
+}
+
+export class ChannelBanSchema extends BaseModel {
+  static $columns = ['channelId', 'userId'] as const
+  $columns = ChannelBanSchema.$columns
+  @column({ isPrimary: true })
+  declare channelId: number
+  @column()
+  declare userId: number
+}
+
+export class ChannelKickVoteSchema extends BaseModel {
+  static $columns = ['channelId', 'targetId', 'voterId'] as const
+  $columns = ChannelKickVoteSchema.$columns
+  @column({ isPrimary: true })
+  declare channelId: number
+  @column()
+  declare targetId: number
+  @column()
+  declare voterId: number
+}
+
+export class ChannelMemberSchema extends BaseModel {
+  static $columns = ['channelId', 'invitationRead', 'invited', 'pinned', 'userId'] as const
+  $columns = ChannelMemberSchema.$columns
+  @column({ isPrimary: true })
+  declare channelId: number
+  @column()
+  declare invitationRead: boolean
+  @column()
+  declare invited: boolean
+  @column()
+  declare pinned: boolean
+  @column()
+  declare userId: number
+}
+
+export class MessageSchema extends BaseModel {
+  static $columns = ['authorId', 'channelId', 'content', 'createdAt', 'id', 'mentionedUsers'] as const
+  $columns = MessageSchema.$columns
+  @column()
+  declare authorId: number
+  @column()
+  declare channelId: number
+  @column()
+  declare content: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare mentionedUsers: string
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['createdAt', 'email', 'firstName', 'id', 'lastName', 'nickname', 'password', 'status', 'updatedAt'] as const
   $columns = UserSchema.$columns
@@ -40,11 +107,11 @@ export class UserSchema extends BaseModel {
   @column()
   declare email: string
   @column()
-  declare firstName: string | null
+  declare firstName: string
   @column({ isPrimary: true })
   declare id: number
   @column()
-  declare lastName: string | null
+  declare lastName: string
   @column()
   declare nickname: string
   @column({ serializeAs: null })

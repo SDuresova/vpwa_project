@@ -4,9 +4,9 @@ import { useQuasar } from 'quasar'
 export function useAttempt() {
   const $q = useQuasar()
 
-  return (fn: () => void) => {
+  return async (fn: () => unknown | Promise<unknown>) => {
     try {
-      fn()
+      await fn()
     } catch (error) {
       $q.notify({
         color: 'negative',

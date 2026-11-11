@@ -31,26 +31,6 @@
           </q-item-section>
           <q-item-section>{{ option.label }}</q-item-section>
         </q-item>
-        <q-separator dark spaced />
-        <q-item
-          clickable
-          v-close-popup
-          @click="running ? stopDemo() : startDemo()"
-          :disable="!canDemo"
-        >
-          <q-item-section avatar
-            ><q-icon name="chat_bubble_outline"
-          /></q-item-section>
-          <q-item-section
-            >{{ running ? 'Stop message demo' : 'Start message demo' }}
-            <q-item-label caption
-              >3 messages to #general, 5 seconds apart</q-item-label
-            >
-          </q-item-section>
-        </q-item>
-        <div class="q-px-md q-pb-sm text-caption"
-          >Demo cards also appear while viewing the app.</div
-        >
       </q-list>
     </q-menu>
   </q-btn>
@@ -68,7 +48,7 @@
             icon="forest"
             text-color="white"
           />
-          <span>VPWA</span><small v-if="card.demo">Demo</small>
+          <span>VPWA</span>
           <q-btn
             flat
             round
@@ -98,7 +78,7 @@ import { useNotifications, type NotificationMode } from '@/states/notifications'
 import MentionText from './MentionText.vue'
 import { useMessageNotifications } from '@/composables/useMessageNotifications'
 const { mode, setMode } = useNotifications()
-const { cards, dismiss, running, canDemo, startDemo, stopDemo } =
+const { cards, dismiss } =
   useMessageNotifications()
 const options: { value: NotificationMode; label: string }[] = [
   { value: 'all', label: 'All messages' },

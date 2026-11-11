@@ -13,6 +13,7 @@
     "build": "node ace build",
     "dev": "node ace serve --hmr",
     "test": "node ace test",
+    "test:requirements": "node tests/requirements.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit"
@@ -65,7 +66,6 @@
     "@japa/api-client": "^3.2.1",
     "@tuyau/core": "^1.2.2",
     "@vinejs/vine": "^4.4.0",
-    "better-sqlite3": "^13.0.3",
     "luxon": "^3.7.2",
     "mysql2": "^3.24.6",
     "reflect-metadata": "^0.2.2"

@@ -140,10 +140,7 @@
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
-import { useAuth } from '@/states/auth'
 import { api } from '@/boot/axios'
-import { isAxiosError } from 'axios'
-const { updateProfile } = useAuth()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -164,9 +161,7 @@ const onSubmit = async () => {
       password: password.value
     })
   } catch (error) {
-    const message = isAxiosError(error)
-      ? (error.response?.data?.errors?.[0]?.message ?? 'Registration failed.')
-      : 'Registration failed.'
+    const message = error instanceof Error ? error.message : 'Registration failed.'
     $q.notify({ color: 'negative', message })
     return
   }

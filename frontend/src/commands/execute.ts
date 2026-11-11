@@ -35,7 +35,7 @@ function checkRules(definition: CommandDefinition, channelId: number | null) {
   }
 }
 
-export function executeCommand(input: string, context: CommandContext): CommandResult {
+export async function executeCommand(input: string, context: CommandContext): Promise<CommandResult> {
   const { name, args } = parseCommand(input) // parse command
   const command = commandDefinitions[name] // get the definition of command
 

@@ -75,6 +75,8 @@ import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/states/auth'
+import { refreshChat, resetChat } from '@/states/chat'
+import { useChannels } from '@/states/channels'
 const { login } = useAuth()
 
 const router = useRouter()
@@ -83,9 +85,11 @@ const nickname = ref('')
 const password = ref('')
 const showPassword = ref(false)
 
-const onSubmit = () => {
+const onSubmit = async () => {
   try {
-    login(nickname.value)
+    await login(nickname.value, password.value)
+    resetChat()
+    await refreshChat()
   } catch (error) {
     $q.notify({
       color: 'negative',
@@ -93,12 +97,11 @@ const onSubmit = () => {
     })
     return
   }
-  // Prototype navigation only; credentials are not verified by a backend yet.
   $q.notify({
     color: 'info',
-    message: 'Opening the chat preview.',
+    message: 'Logged in successfully.',
     position: 'top'
   })
-  router.push('/channels/general')
+  router.push('/channels/' + (useChannels().joinedChannels.value[0]?.name || 'general'))
 }
 </script>

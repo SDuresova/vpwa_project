@@ -1,81 +1,53 @@
 import { computed, readonly, ref } from 'vue'
-import type { Profile } from '../types/profile.ts'
-import type { UserStatus } from '../types/member.ts'
-import { mockProfile } from '../mock/users.ts'
-import { useUsers } from './users.ts'
-import { useDrafts } from './drafts.ts'
+import type { Profile } from '../types/profile'
+import type { UserStatus } from '../types/member'
+import { api } from '../services/api'
+import { useDrafts } from './drafts'
 
-const profile = ref<Profile>(structuredClone(mockProfile))
+const empty = (): Profile => ({ id: 0, firstName: '', lastName: '', nickname: '', email: '', status: 'offline' })
+const profile = ref<Profile>(empty())
 const isLoggedIn = ref(false)
+let restoring: Promise<void> | undefined
+let restored = false
+const fullName = computed(() => `${profile.value.firstName} ${profile.value.lastName}`.trim())
+const initials = computed(() => ((profile.value.firstName[0] || profile.value.nickname[0] || '?') + (profile.value.lastName[0] || '')).toUpperCase())
 
-const { updateUser, getByNickname } = useUsers()
-
-const fullName = computed(() =>
-  `${profile.value.firstName} ${profile.value.lastName}`.trim()
-)
-
-const initials = computed(() => {
-  const { firstName, lastName, nickname } = profile.value
-  const first = firstName[0] ?? nickname[0] ?? '?'
-  const last = lastName[0] ?? ''
-  return (first + last).toUpperCase()
-})
-
-// sync data
-function syncDirectory() {
-  updateUser(profile.value.id, {
-    nickname: profile.value.nickname,
-    status: profile.value.status
-  })
-}
-
-function login(nickname: string) {
-  validateNickname(nickname)
-  if (nickname !== profile.value.nickname) {
-    profile.value = { ...profile.value, firstName: '', lastName: '', nickname }
-  }
-  profile.value.status = 'online'
-  isLoggedIn.value = true
-  syncDirectory()
-}
-
-function logout() {
-  useDrafts().clear()
-  profile.value.status = 'offline'
+function clear() {
+  sessionStorage.removeItem('vpwa-token')
+  profile.value = empty()
   isLoggedIn.value = false
-  syncDirectory()
+  useDrafts().clear()
 }
+window.addEventListener('vpwa-unauthorized', clear)
 
-function validateNickname(nickname: string) {
-  if (!/^[a-zA-Z0-9_-]+$/.test(nickname))
-    throw new Error(
-      'Use letters, numbers, underscores or hyphens for your nickname.'
-    )
-  const existing = getByNickname(nickname)
-  if (existing && existing.id !== profile.value.id)
-    throw new Error('This nickname is already taken.')
+async function restore() {
+  if (restored) return
+  if (!restoring) restoring = (async () => {
+    if (sessionStorage.getItem('vpwa-token')) {
+      const { data } = await api.get<Profile>('/account/profile')
+      profile.value = data
+      isLoggedIn.value = true
+    }
+    restored = true
+  })().finally(() => { restoring = undefined })
+  return restoring
 }
-
-function updateProfile(changes: Partial<Omit<Profile, 'id'>>) {
-  if (changes.nickname !== undefined) validateNickname(changes.nickname)
-  Object.assign(profile.value, changes)
-  syncDirectory()
+async function login(nickname: string, password: string) {
+  const { data } = await api.post('/auth/login', { nickname, password })
+  sessionStorage.setItem('vpwa-token', data.token)
+  profile.value = data.user
+  isLoggedIn.value = true
+  restored = true
 }
-
-function setStatus(status: UserStatus) {
-  profile.value.status = status
-  syncDirectory()
+async function logout() {
+  await api.post('/account/logout')
+  clear()
 }
-
+async function updateProfile(changes: Partial<Omit<Profile, 'id'>>) {
+  const { data } = await api.patch<Profile>('/account/profile', { ...profile.value, ...changes })
+  profile.value = data
+}
+const setStatus = (status: UserStatus) => updateProfile({ status })
 export function useAuth() {
-  return {
-    profile: readonly(profile),
-    isLoggedIn: readonly(isLoggedIn),
-    fullName,
-    initials,
-    login,
-    logout,
-    updateProfile,
-    setStatus
-  }
+  return { profile: readonly(profile), isLoggedIn: readonly(isLoggedIn), fullName, initials, login, logout, restore, updateProfile, setStatus }
 }

@@ -35,7 +35,8 @@ export default defineRouter((/* { store, ssrContext } */) => {
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
   })
 
-  Router.beforeEach(to => {
+  Router.beforeEach(async to => {
+    try { await useAuth().restore() } catch { /* A protected page redirects below. */ }
     if (to.path.startsWith('/channels/') && !useAuth().isLoggedIn.value)
       return '/login'
   })

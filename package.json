@@ -1,0 +1,13 @@
+{
+  "name": "vpwa-project",
+  "private": true,
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "concurrently --kill-others --names backend,frontend \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "setup": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "test:requirements": "npm --prefix backend run test:requirements"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

@@ -25,7 +25,7 @@
       self="top right"
       :offset="[0, 10]"
       class="notification-inbox"
-      @show="markInvitationsRead"
+      @show="attempt(markInvitationsRead)"
     >
       <section id="notification-inbox" aria-label="Notifications">
         <div class="inbox-heading">
@@ -55,8 +55,8 @@
                   no-caps
                   unelevated
                   color="primary"
-                  label="Join"
-                  :aria-label="`Join ${channel.name}`"
+                  label="Accept"
+                  :aria-label="`Accept invitation to ${channel.name}`"
                   @click="join(channel)"
                 />
                 <q-btn
@@ -64,7 +64,7 @@
                   flat
                   label="Decline"
                   :aria-label="`Decline ${channel.name}`"
-                  @click="declineInvitation(channel.id)"
+                  @click="attempt(() => declineInvitation(channel.id))"
                 />
               </div>
             </q-item-section>
@@ -103,8 +103,8 @@ const {
 const open = ref(false)
 
 function join(channel: Pick<Channel, 'id' | 'name'>) {
-  attempt(() => {
-    acceptInvitation(channel.id)
+  attempt(async () => {
+    await acceptInvitation(channel.id)
     open.value = false
     router.push('/channels/' + channel.name)
     emit('navigate')

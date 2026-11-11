@@ -49,12 +49,6 @@
       </article>
     </div>
     <div class="composer-area">
-      <TypingIndicator
-        :channel-id="activeChannel?.id"
-        :members="channelMembers"
-        :current-user-id="profile.id"
-        :enabled="canSend && profile.status !== 'offline'"
-      />
       <transition name="suggestions">
         <div
           v-if="showSuggestions"
@@ -120,7 +114,8 @@
           icon="send"
           type="submit"
           aria-label="Send message"
-          :disable="!draft.trim()"
+          :disable="!draft.trim() || sending"
+          :loading="sending"
           class="q-mr-sm"
         />
       </q-form>
@@ -156,7 +151,7 @@
       ><q-card class="command-dialog q-pa-lg"
         ><h2>Delete #{{ pendingDelete?.name }}?</h2
         ><p
-          >You are the administrator. This removes the channel and its local
+          >You are the administrator. This removes the channel and its
           message history.</p
         ><q-btn flat label="Cancel" @click="pendingDeleteId = null" /><q-btn
           color="negative"
@@ -170,7 +165,6 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { QInput } from 'quasar'
-import TypingIndicator from '@/components/TypingIndicator.vue'
 import MentionText from '@/components/MentionText.vue'
 import { useAuth } from '@/states/auth'
 import { useChannels } from '@/states/channels'
@@ -209,6 +203,7 @@ const selected = ref(0)
 const dismissed = ref(false)
 const feedback = ref('')
 const hasError = ref(false)
+const sending = ref(false)
 const helpOpen = ref(false)
 const membersOpen = ref(false)
 const pendingDeleteId = ref<number | null>(null)
@@ -309,7 +304,7 @@ async function navigateTo(id?: number) {
 async function confirmDelete() {
   if (pendingDeleteId.value === null) return
   try {
-    channels.remove(pendingDeleteId.value)
+    await channels.remove(pendingDeleteId.value)
     pendingDeleteId.value = null
     await navigateTo()
   } catch (error) {
@@ -327,14 +322,15 @@ watch(channelName, () => {
   membersOpen.value = false
 })
 async function sendMessage() {
-  if (!draft.value.trim()) return
+  if (!draft.value.trim() || sending.value) return
+  sending.value = true
   const sourceChannelName = channelName.value
   hasError.value = false
   feedback.value = ''
   try {
     if (draft.value.trim().startsWith('/')) {
       const input = draft.value.trim()
-      const result = executeCommand(input, {
+      const result = await executeCommand(input, {
         channelId: activeChannel.value?.id ?? null
       })
       if (result.confirmDelete !== undefined) {
@@ -349,7 +345,7 @@ async function sendMessage() {
     } else {
       if (!activeChannel.value)
         throw new Error('Join this channel before sending messages.')
-      messages.send(activeChannel.value.id, draft.value)
+      await messages.send(activeChannel.value.id, draft.value)
     }
     drafts.remove(sourceChannelName)
     await nextTick()
@@ -357,6 +353,8 @@ async function sendMessage() {
     history?.scrollTo({ top: history.scrollHeight, behavior: 'smooth' })
   } catch (error) {
     showError(error)
+  } finally {
+    sending.value = false
   }
 }
 </script>

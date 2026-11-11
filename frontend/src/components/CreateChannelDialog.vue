@@ -42,8 +42,8 @@ const rules = [
 ]
 
 function submit() {
-  attempt(() => {
-    create(name.value, type.value)
+  attempt(async () => {
+    await create(name.value, type.value)
     router.push('/channels/' + name.value)
     name.value = ''
     type.value = 'public'

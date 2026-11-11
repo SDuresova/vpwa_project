@@ -56,9 +56,9 @@ function resetDraft() {
 }
 
 function save() {
-  attempt(() => {
+  attempt(async () => {
     const { id: _id, ...changes } = draft
-    updateProfile(changes)
+    await updateProfile(changes)
     open.value = false
   })
 }

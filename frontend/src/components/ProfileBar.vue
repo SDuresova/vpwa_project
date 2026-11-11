@@ -21,6 +21,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAttempt } from '@/composables/useAttempt'
+import { resetChat } from '@/states/chat'
 import { useAuth } from '@/states/auth'
 import { statusColors } from '@/constants/status'
 import ProfileDialog from '@/components/ProfileDialog.vue'
@@ -30,9 +32,13 @@ const { profile, initials, logout } = useAuth()
 
 const dialogOpen = ref(false)
 
+const attempt = useAttempt()
 function logOut() {
-  logout()
-  router.push('/login')
+  attempt(async () => {
+    await logout()
+    resetChat()
+    await router.push('/login')
+  })
 }
 </script>
 

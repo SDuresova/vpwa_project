@@ -6,12 +6,36 @@ Semestrálny projekt z predmetu Vývoj progresívnych webových aplikácií (FII
 - `backend/` – AdonisJS (TypeScript), REST API + websockety
 - databáza – MySQL
 
+Implementované požiadavky, príkazy a postup overenia: [REQUIREMENTS.md](REQUIREMENTS.md).
+
 ## Požiadavky
 
 - Node.js 22+
 - MySQL (napr. XAMPP / Laragon)
 
 ## Spustenie
+
+### Každodenné spustenie jedným príkazom
+
+V XAMPP zapni **MySQL**. Potom v priečinku `project/` spusti:
+
+```bash
+npm start
+```
+
+Tento príkaz spustí backend aj frontend v jednom termináli. Aplikáciu otvor na
+http://localhost:9000. Oba servery zastavíš pomocou `Ctrl+C`.
+Ak už bežia v samostatných termináloch, najprv ich zastav.
+
+Po novom stiahnutí projektu nainštaluj závislosti príkazom `npm run setup`
+a vykonaj jednorazové nastavenie databázy a backendu uvedené nižšie.
+
+### Zobrazenie databázy
+
+V XAMPP zapni **Apache** aj **MySQL** a otvor http://localhost/phpmyadmin/.
+Vľavo vyber databázu podľa `DB_DATABASE` v `backend/.env`, potom tabuľku
+`users` a kartu **Browse / Prechádzať**. Tu uvidíš registrovaných používateľov.
+Heslá sú uložené ako hash. Apache je potrebný pre phpMyAdmin, nie pre samotnú aplikáciu.
 
 ### 1. Databáza
 
