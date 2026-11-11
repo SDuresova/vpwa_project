@@ -68,7 +68,7 @@ export class ChannelKickVoteSchema extends BaseModel {
 }
 
 export class ChannelMemberSchema extends BaseModel {
-  static $columns = ['channelId', 'invitationRead', 'invited', 'pinned', 'userId'] as const
+  static $columns = ['channelId', 'invitationRead', 'invited', 'lastReadMessageId', 'pinned', 'userId'] as const
   $columns = ChannelMemberSchema.$columns
   @column({ isPrimary: true })
   declare channelId: number
@@ -76,6 +76,8 @@ export class ChannelMemberSchema extends BaseModel {
   declare invitationRead: boolean
   @column()
   declare invited: boolean
+  @column()
+  declare lastReadMessageId: number
   @column()
   declare pinned: boolean
   @column()

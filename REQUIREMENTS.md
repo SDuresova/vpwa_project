@@ -31,6 +31,9 @@ a spustiť `node ace migration:run` v priečinku `backend`.
 
 Aktualizácie medzi klientmi sa načítavajú každé 2 sekundy (HTTP polling).
 Token je uložený pre konkrétnu kartu prehliadača a prežije obnovenie stránky.
+Počet neprečítaných správ sa zobrazuje pri kanáli a ukladá sa pre každého člena
+v databáze. Vlastné správy sa nepočítajú. Otvorenie kanála vo viditeľnej karte
+označí načítané správy ako prečítané; skrytá karta ich automaticky neoznačuje.
 Na ukážku viacerých používateľov použi samostatné karty alebo prehliadače.
 Zmeny zostávajú v databáze aj po reštarte servera.
 

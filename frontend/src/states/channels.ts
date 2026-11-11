@@ -33,7 +33,7 @@ export function useChannels() {
     markInvitationsRead: async () => {
       for (const channel of invitations.value.filter(c => !c.invitationRead)) await act('read', channel.id)
     },
-    markRead: (_id: number) => {},
+    markRead: (id: number, throughId: number) => act('readMessages', id, [String(throughId)]),
     togglePin: (id: number) => act('pin', id),
     invite: (id: number, userId: number) => act('invite', id, [useUsers().getById(userId)?.nickname || '']),
     revoke: (id: number, userId: number) => act('revoke', id, [useUsers().getById(userId)?.nickname || '']),

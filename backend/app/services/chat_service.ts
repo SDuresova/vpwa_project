@@ -30,7 +30,8 @@ export async function chatSnapshot(userId: number) {
           memberIds: members.filter((m) => m.channel_id === c.id).map((m) => m.user_id),
           bannedIds: bans.filter((b) => b.channel_id === c.id).map((b) => b.user_id),
           invited: !!membership.invited, invitationRead: !!membership.invitation_read,
-          pinned: !!membership.pinned, unreadCount: 0,
+          pinned: !!membership.pinned,
+          unreadCount: history.filter((m) => m.channel_id === c.id && m.author_id !== userId && m.id > membership.last_read_message_id).length,
         }
       })
     return {
@@ -88,6 +89,15 @@ export async function channelAction(userId: number, action: string, channelId: n
       const invitationAction = ['accept', 'decline', 'read'].includes(action)
       const { channel, member } = await requireChannel(trx, channelId, userId, invitationAction)
       if (invitationAction && !member.invited) fail('No pending invitation exists.', 409)
+      if (action === 'readMessages') {
+        const throughId = Number(args[0])
+        if (args.length !== 1 || !Number.isSafeInteger(throughId) || throughId < 1) fail('Invalid message cursor.')
+        const message = await trx.from('messages').where({ id: throughId, channel_id: channelId }).first()
+        if (!message) fail('Message does not belong to this channel.')
+        await trx.from('channel_members').where({ channel_id: channelId, user_id: userId })
+          .update({ last_read_message_id: Math.max(Number(member.last_read_message_id), throughId) })
+        return { message: '' }
+      }
       const admin = channel.admin_id === userId
       if (action === 'quit' || action === 'cancel' || action === 'decline') {
         if (action === 'quit' && !admin) fail('Only the administrator can delete this channel.', 403)

@@ -30,7 +30,7 @@
     </q-item-section>
 
     <q-item-section v-if="channel.unreadCount" side>
-      <q-badge rounded color="primary">{{ channel.unreadCount }}</q-badge>
+      <q-badge rounded color="primary" :aria-label="`${channel.unreadCount} unread messages in ${channel.name}`">{{ channel.unreadCount }}</q-badge>
     </q-item-section>
 
     <q-item-section side>

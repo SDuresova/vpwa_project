@@ -60,10 +60,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/states/auth'
-import { refreshChat, resetChat, syncError } from '@/states/chat'
+import { messageData, refreshChat, resetChat, syncError } from '@/states/chat'
 import { useQuasar } from 'quasar'
 import { useChannels } from '@/states/channels'
 import { useActiveChannel } from '@/composables/useActiveChannel'
@@ -92,10 +92,29 @@ const { channelName, activeChannel } = useActiveChannel()
 const leftDrawerOpen = ref(false)
 const rightDrawerOpen = ref(false)
 
+const latestMessageId = computed(() => messageData.value.reduce(
+  (latest, message) => message.channelId === activeChannel.value?.id ? Math.max(latest, message.id) : latest, 0
+))
+let markingRead = false
+async function markVisibleChannelRead() {
+  const channel = activeChannel.value
+  if (markingRead || disposed || !$q.appVisible || !channel?.unreadCount || !latestMessageId.value) return
+  markingRead = true
+  try {
+    // Acknowledge only messages already loaded, never messages arriving during the request.
+    await markRead(channel.id, latestMessageId.value)
+  } catch (error) {
+    syncError.value = error instanceof Error ? error.message : 'Could not mark messages as read'
+    return
+  } finally {
+    markingRead = false
+  }
+  void markVisibleChannelRead()
+}
 watch(
-  () => activeChannel.value?.id,
-  id => id !== undefined && markRead(id),
-  { immediate: true }
+  [() => activeChannel.value, latestMessageId, () => $q.appVisible],
+  () => { void markVisibleChannelRead() },
+  { immediate: true, flush: 'post' }
 )
 
 function closeMobileChannels() {
